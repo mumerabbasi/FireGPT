@@ -1,0 +1,243 @@
+#!/usr/bin/env python
+"""
+firegpt/ingest/doc_ingest.py
+Ingests all PDFs under a given directory into a ChromaDB vector store.
+It uses a Mistral-7B-Instruct-v0.3 model for summarisation and an
+all-MiniLM-L6-v2 model for embeddings.
+"""
+from __future__ import annotations
+
+import hashlib
+import logging
+import textwrap
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable, List, Tuple
+
+import pdfplumber
+import typer
+from chromadb import PersistentClient
+from sentence_transformers import SentenceTransformer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TextGenerationPipeline,
+    pipeline,
+)
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(message)s",
+)
+
+
+###############################################################################
+# Config dataclass
+###############################################################################
+@dataclass(slots=True)
+class IngestConfig:
+    root_dir: Path
+    db_path: Path = Path("data/db/chroma")
+    model_path: str = "models/mistral"  # Mistral-7B-Instruct-v0.3
+    embedder_path: str = "models/minilm"  # all-MiniLM-L6-v2
+    chunk_window_pages: int = 2
+    summary_words: int = 120
+    collection_name: str = "fire_docs"
+
+
+###############################################################################
+# Section extraction & summarisation helpers
+###############################################################################
+def extract_sections(
+    pdf_path: Path,
+    page_window: int = 2,
+) -> Iterable[Tuple[str, str]]:
+    """
+    Yield (page_range, text) pairs for each logical section.
+
+    Chapter detection heuristic: a new section starts when the
+    top-most font size on a page increases by >20 %.
+    Fallback: fixed 'page_window' page chunks.
+    """
+    with pdfplumber.open(pdf_path) as pdf:
+        buffer: List[str] = []
+        pages: List[int] = []
+        last_font = None
+
+        for page in pdf.pages:
+            words = page.extract_words(extra_attrs=["size"])  # ensure 'size' present
+            top_font = words[0].get("size", 10) if words else 10
+            page_text = page.extract_text() or ""
+            heading_jump = last_font and top_font > 1.2 * last_font
+            window_break = page_window > 0 and len(pages) >= page_window
+
+            if (heading_jump or window_break) and buffer:
+                yield (f"{pages[0]}-{pages[-1]}", "\n".join(buffer))
+                buffer, pages = [], []
+
+            buffer.append(page_text)
+            pages.append(page.page_number)
+            last_font = top_font
+
+        if buffer:
+            yield (f"{pages[0]}-{pages[-1]}", "\n".join(buffer))
+
+
+def build_summariser(model_path: str) -> TextGenerationPipeline:
+    LOGGER.info("Loading summariser model [%s] …", model_path)
+    tok = AutoTokenizer.from_pretrained(
+        model_path,
+        local_files_only=True,  # use local files only
+        )
+    mdl = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        # device_map="auto",
+        device_map=None,  # use a single GPU
+        torch_dtype="auto",
+        local_files_only=True,  # use local files only
+    )
+    return pipeline(
+        "text-generation",
+        model=mdl,
+        tokenizer=tok
+    )
+
+
+def summarise(
+    pipe: TextGenerationPipeline,
+    text: str,
+    max_words: int,
+) -> str:
+    prompt = textwrap.dedent(
+        f"""
+        You are a technical summariser. Reduce the following passage
+        to ≤ {max_words} words, preserving numeric thresholds and procedural rules.
+        ### PASSAGE
+        {text}
+        ### SUMMARY
+        """
+    ).strip()
+
+    # TODO: inspect which other library sets this
+    # without temperature=None, generation gives a warning
+    out = pipe(
+        prompt,
+        do_sample=False,
+        max_new_tokens=180,
+        temperature=None,
+        pad_token_id=pipe.tokenizer.eos_token_id
+    )[0]["generated_text"]
+    summary = out.split("### SUMMARY")[-1].strip()
+    return " ".join(summary.split()[: max_words + 5])  # safety trim
+
+
+###############################################################################
+# Core ingestion routine
+###############################################################################
+def ingest_directory(cfg: IngestConfig) -> None:
+    embedder = SentenceTransformer(
+        cfg.embedder_path,
+        local_files_only=True,  # use local files only
+    )
+    client = PersistentClient(path=str(cfg.db_path))
+    collection = client.get_or_create_collection(cfg.collection_name)
+    summariser = build_summariser(cfg.model_path)
+
+    pdf_files = sorted(cfg.root_dir.rglob("*.pdf"))
+    LOGGER.info("Discovered %d PDFs under %s", len(pdf_files), cfg.root_dir)
+
+    for pdf in pdf_files:
+        LOGGER.info("Processing %s", pdf.relative_to(cfg.root_dir))
+        for page_range, section_text in extract_sections(
+            pdf, cfg.chunk_window_pages
+        ):
+            summary = summarise(summariser, section_text, cfg.summary_words)
+            embedding = embedder.encode(
+                summary,
+                convert_to_numpy=True,
+                normalize_embeddings=True,
+            )
+
+            section_id = hashlib.sha1(
+                f"{pdf}:{page_range}".encode()
+            ).hexdigest()[:16]
+
+            full_text_path = (
+                cfg.db_path.parent / "fulltext" / f"{section_id}.txt"
+            )
+            full_text_path.parent.mkdir(parents=True, exist_ok=True)
+            full_text_path.write_text(section_text, encoding="utf-8")
+
+            collection.upsert(
+                ids=[section_id],
+                embeddings=[embedding.tolist()],
+                documents=[summary],
+                metadatas=[
+                    {
+                        "pdf": pdf.relative_to(cfg.root_dir).as_posix(),
+                        "pages": page_range,
+                        "full_text": str(full_text_path),
+                    }
+                ],
+            )
+            LOGGER.debug(
+                "Section %s (%s pages %s) ingested.",
+                section_id,
+                pdf.name,
+                page_range,
+            )
+
+
+###############################################################################
+# Typer CLI
+###############################################################################
+cli = typer.Typer(add_completion=False)
+
+
+@cli.command()
+def main(
+    root_dir: Path = typer.Option(
+        "data/docs",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        readable=True,
+        help="Root directory containing PDFs (scanned recursively).",
+    ),
+    db_path: Path = typer.Option(
+        "data/db/chroma",
+        help="Directory for ChromaDB persistent storage.",
+    ),
+    model_path: str = typer.Option(
+        "models/mistral",
+        help="Local path to the Mistral-7B-Instruct-v0.3 model directory, used for summarisation.",
+    ),
+    embedder_path: str = typer.Option(
+        "models/minilm",
+        help="Local path to the all-MiniLM-L6-v2 model directory, used for embeddings.",
+    ),
+    window: int = typer.Option(
+        2,
+        help="Fallback fixed page-window size when no heading detected.",
+    ),
+    summary_words: int = typer.Option(
+        120,
+        help="Maximum words per generated summary.",
+    ),
+):
+    """Ingest all PDFs under *ROOT_DIR* into a ChromaDB vector store."""
+    cfg = IngestConfig(
+        root_dir=root_dir,
+        db_path=db_path,
+        model_path=model_path,
+        embedder_path=embedder_path,
+        chunk_window_pages=window,
+        summary_words=summary_words,
+    )
+    ingest_directory(cfg)
+    LOGGER.info("Finished ingestion of PDFs in %s", root_dir)
+
+
+if __name__ == "__main__":
+    cli()
