@@ -93,7 +93,7 @@ def build_summariser(model_path: str) -> TextGenerationPipeline:
     mdl = AutoModelForCausalLM.from_pretrained(
         model_path,
         # device_map="auto",
-        device_map=None,  # use a single GPU
+        device_map=None,  # force use single GPU
         torch_dtype="auto",
         local_files_only=True,  # use local files only
     )
