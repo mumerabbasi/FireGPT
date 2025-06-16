@@ -140,14 +140,8 @@ async def main() -> None:
                     continue
 
                 prompt = build_prompt(q, chunks)
-                generated = ""
-                for token in pipe(prompt):
-                    part = token["generated_text"]
-                    if not generated and part.startswith(prompt):
-                        part = part[len(prompt):]
-                    print(part, end="", flush=True)
-                    generated += part
-                print("\n")
+                generation = pipe(prompt, return_full_text=False)[0]["generated_text"]
+                print("\nAssistant:", generation.strip(), "\n")
 
     except KeyboardInterrupt:
         print("\nBye")
