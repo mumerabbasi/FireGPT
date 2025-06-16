@@ -31,6 +31,7 @@ import os
 from typing import List
 from pathlib import Path
 import json
+import asyncio
 
 import transformers
 from fastmcp import Client
@@ -40,8 +41,8 @@ from fastmcp import Client
 # ---------------------------------------------------------------------------
 MCP_EP = os.getenv("MCP_EP", "http://localhost:7790/mcp")
 MISTRAL_PATH = os.getenv("FGPT_MISTRAL_PATH", "models/mistral")
-TOP_K = int(os.getenv("FGPT_TOP_K", "2"))
-MAX_NEW = int(os.getenv("FGPT_MAX_NEW", "500"))
+TOP_K = int(os.getenv("FGPT_TOP_K", "5"))
+MAX_NEW = int(os.getenv("FGPT_MAX_NEW", "600"))
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -67,10 +68,10 @@ pipe = transformers.pipeline(
     "text-generation",
     model=MISTRAL_PATH,
     tokenizer=MISTRAL_PATH,
-    device_map=None,          # -- force single GPU, adjust if multi-GPU-auto desired
+    device_map=None,  # -- force single GPU, adjust if multi-GPU-auto desired
     torch_dtype="auto",
     temperature=None,
-    do_sample=False,
+    do_sample=True,
     max_new_tokens=MAX_NEW,
     pad_token_id=transformers.AutoTokenizer.from_pretrained(
         MISTRAL_PATH, local_files_only=True
@@ -153,5 +154,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())

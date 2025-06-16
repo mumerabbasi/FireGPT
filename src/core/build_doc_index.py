@@ -2,8 +2,7 @@
 """
 firegpt/ingest/doc_ingest.py
 Ingests all PDFs under a given directory into a ChromaDB vector store.
-It uses a Mistral-7B-Instruct-v0.3 model for summarisation and an
-all-MiniLM-L6-v2 model for embeddings.
+It uses a Mistral-7B-Instruct-v0.3 model for summarisation and an all-MiniLM-L6-v2 model for embeddings.
 """
 from __future__ import annotations
 
@@ -51,37 +50,29 @@ class IngestConfig:
 # -----------------------------------------------------------------------------
 def extract_sections(
     pdf_path: Path,
-    page_window: int = 2,
+    page_window: int = 10,
 ) -> Iterable[Tuple[str, str]]:
     """
-    Yield (page_range, text) pairs for each logical section.
-
-    Chapter detection heuristic: a new section starts when the
-    top-most font size on a page increases by >20 %.
-    Fallback: fixed 'page_window' page chunks.
+    Yield (page_range, text) tuples for overlapping, fixed-size page windows.
     """
+    if page_window <= 0:
+        raise ValueError("page_window must be a positive integer")
+
+    overlap = page_window // 4  # e.g. 4-page window → 1-page overlap
+    step = max(1, page_window - overlap)
+
     with pdfplumber.open(pdf_path) as pdf:
-        buffer: List[str] = []
-        pages: List[int] = []
-        last_font = None
+        pages_text: List[str] = [page.extract_text() or "" for page in pdf.pages]
 
-        for page in pdf.pages:
-            words = page.extract_words(extra_attrs=["size"])  # ensure 'size' present
-            top_font = words[0].get("size", 10) if words else 10
-            page_text = page.extract_text() or ""
-            heading_jump = last_font and top_font > 1.2 * last_font
-            window_break = page_window > 0 and len(pages) >= page_window
-
-            if (heading_jump or window_break) and buffer:
-                yield (f"{pages[0]}-{pages[-1]}", "\n".join(buffer))
-                buffer, pages = [], []
-
-            buffer.append(page_text)
-            pages.append(page.page_number)
-            last_font = top_font
-
-        if buffer:
-            yield (f"{pages[0]}-{pages[-1]}", "\n".join(buffer))
+    total_pages = len(pages_text)
+    for start in range(0, total_pages, step):
+        end = min(start + page_window, total_pages)  # inclusive upper bound
+        yield (
+            f"{start + 1}-{end}",
+            "\n".join(pages_text[start:end]),
+        )
+        if end == total_pages:
+            break
 
 
 def build_summariser(model_path: str) -> TextGenerationPipeline:
@@ -123,8 +114,8 @@ def summarise(
     # without temperature=None, generation gives a warning
     out = pipe(
         prompt,
-        do_sample=False,
-        max_new_tokens=180,
+        do_sample=True,
+        max_new_tokens=1000,
         temperature=None,
         pad_token_id=pipe.tokenizer.eos_token_id
     )[0]["generated_text"]
@@ -218,11 +209,11 @@ def main(
         help="Local path to the all-MiniLM-L6-v2 model directory, used for embeddings.",
     ),
     window: int = typer.Option(
-        2,
-        help="Fallback fixed page-window size when no heading detected.",
+        4,
+        help="Window size for chunks (number of pages per chunk).",
     ),
     summary_words: int = typer.Option(
-        120,
+        250,   # around 1/2 page of summary for 4 pages
         help="Maximum words per generated summary.",
     ),
 ):
