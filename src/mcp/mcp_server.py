@@ -1,26 +1,7 @@
 #!/usr/bin/env python
 """
 firegpt/mcp_server/main.py
---------------------------
-Unified **FastMCP 2.x** server for FireGPT (documents-only; geo stubs).
-
-• documents   : Chroma-backed vector search     [ready]
-• geospatial  : grid / risk stubs               [to-do]
-
-Run
-----
-$ fastmcp run firegpt/mcp_server/main.py           # host=0.0.0.0 port=7790
-# …or, equivalently
-$ python -m firegpt.mcp_server.main
-
-Env overrides (optional)
-------------------------
-FGPT_DB_PATH        data/db/chroma
-FGPT_EMBED_PATH     models/minilm
-FGPT_COLLECTION     fire_docs
-FGPT_TOP_K          5
-FGPT_HOST           0.0.0.0
-FGPT_PORT           7790
+TODO: Implement graceful shutdown
 """
 import json
 import logging
@@ -88,7 +69,7 @@ mcp = FastMCP("FireGPT-All-In-One")
 
 
 # ---------------------------------------------------------------------------
-# DOCUMENT ENDPOINTS
+# Document retrieval tools
 # ---------------------------------------------------------------------------
 @mcp.resource("data://docs/metadata")
 def docs_metadata() -> list[MetaEntry]:

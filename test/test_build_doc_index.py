@@ -3,7 +3,7 @@ from chromadb import PersistentClient
 from sentence_transformers import SentenceTransformer
 
 embedder = SentenceTransformer(
-    str(Path("models/minilm")),          # ← local path
+    str(Path("models/minilm")),
     trust_remote_code=False,
     local_files_only=True
 )

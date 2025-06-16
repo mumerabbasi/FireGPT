@@ -114,7 +114,7 @@ def summarise(
     # without temperature=None, generation gives a warning
     out = pipe(
         prompt,
-        do_sample=True,
+        do_sample=False,
         max_new_tokens=1000,
         temperature=None,
         pad_token_id=pipe.tokenizer.eos_token_id
