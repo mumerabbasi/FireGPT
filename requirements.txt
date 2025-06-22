@@ -1,0 +1,8 @@
+chromadb
+fastmcp
+sentence-transformers
+typer
+pdfplumber
+pandas
+numpy
+scikit-spatial
