@@ -12,17 +12,6 @@ Workflow
 1. Calls the Fast-MCP tool **`retrieve_chunks`** to obtain top-k summaries.
 2. Builds a prompt and streams an answer from a *local*
    **Mistral-7B-Instruct-v0.3** model.
-
-Quick-start
------------
-$ python -m firegpt.agent.doc_agent
-You: why must drops be 50 m high?
-
-Environment overrides (optional)
---------------------------------
-FGPT_MISTRAL_PATH   models/mistral          # local dir with v0.3 weights
-FGPT_TOP_K          5                       # chunks per query
-FGPT_MAX_NEW        350                     # max generated tokens
 """
 from __future__ import annotations
 

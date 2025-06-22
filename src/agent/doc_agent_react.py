@@ -11,13 +11,8 @@ CLI agent with step-by-step reasoning, tool-use and long-term memory.
     - plan_fire_mission   (extend as you add tools)
 
 * Runs a local Mistral-7B-Instruct-v0.3 model for the LLM brain.
-* Stores past “FinalAnswer” plans in `data/memory/memory.jsonl`
+* Stores past “FinalAnswer” plans in 'data/memory/memory.jsonl'
   and retrieves the top-K similar ones as long-term context.
-
-Usage
------
-$ fastmcp run firegpt/mcp_server/main.py      # in another shell
-$ python -m firegpt.agent.doc_agent.py
 """
 
 from __future__ import annotations
@@ -71,7 +66,8 @@ pipe = transformers.pipeline(
     "text-generation",
     model=MODEL_PATH,
     tokenizer=MODEL_PATH,
-    device_map="auto",
+    device_map=None,
+    device="cuda:0",
     torch_dtype="auto",
     temperature=None,
     do_sample=False,
@@ -131,7 +127,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {}
 
 @_tool(
     name="retrieve_chunks",
-    description="Semantic search over PDF summaries. "
+    description="Semantic search over fire-fighting documents. "
     "Args: query (str), k (int, default 3). Returns list of hits.",
     schema={
         "type": "object",
@@ -147,7 +143,7 @@ async def tool_retrieve_chunks(query: str, k: int = TOP_K_DOCS) -> ToolResult:
     return json.loads(res[0].text)
 
 
-@_tool(
+'''@_tool(
     name="gee_grid",
     description="Return the cached geo grid (cells with slope, fuel, etc.) for "
     "a region of interest. Args: roi (str, bbox id). Returns GeoJSON.",
@@ -179,7 +175,7 @@ async def tool_risk_score(cell_id: str) -> ToolResult:
 )
 async def tool_plan_fire_mission(bbox: str) -> ToolResult:
     res = await cli.call_tool("plan_fire_mission", {"bbox": bbox})
-    return json.loads(res[0].text)
+    return json.loads(res[0].text)'''
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +276,9 @@ async def run_agent(question: str) -> str:
         prompt = _format_messages(messages)
         generation = pipe(prompt, return_full_text=False)[0]["generated_text"]
         assistant_reply = generation.strip()
+        print("Step number:", step + 1)
+        print("Assistant reply is:", assistant_reply)  # Debug: print assistant reply
+        print("End of assistant reply\n")
         messages.append({"role": "assistant", "content": assistant_reply})
 
         # --- Check for FinalAnswer
@@ -340,7 +339,7 @@ async def run_agent(question: str) -> str:
 # ---------------------------------------------------------------------------
 async def main() -> None:
     LOG.info("Connected to MCP %s. Ready.", MCP_EP)
-    print("FireMission-GPT  –  type a question, Ctrl-C to quit\n")
+    print("FireMission-GPT  -  type a question, Ctrl-C to quit\n")
     try:
         async with cli:
             while True:
