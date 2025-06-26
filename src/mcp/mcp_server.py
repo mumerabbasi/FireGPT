@@ -1,139 +1,253 @@
 #!/usr/bin/env python
 """
-firegpt/mcp_server/main.py
-TODO: Implement graceful shutdown
+firegpt/src/mcp_server/mcp_server.py
+
+FastMCP server exposing document retrieval (vector search) and
+fire-danger assessment.
 """
+
 import json
 import logging
 import os
 from pathlib import Path
+from typing import List
 
-import chromadb
 from fastmcp import FastMCP
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-DB_PATH = Path(os.getenv("FGPT_DB_PATH", "data/db/chroma"))
-EMB_PATH = Path(os.getenv("FGPT_EMBED_PATH", "models/minilm"))
+from forest_fire_gee import Client as FireGEE
+from forest_fire_gee.models import (
+    FireDangerRequest,
+    FireDangerResponse,
+    BoundingBox,
+)
+from forest_fire_gee.api.default import assess_fire_danger_assess_fire_danger_post
+from forest_fire_gee.types import Response
+
+# ----------------------------------------------------------------------------
+# Configuration & Logging
+# ----------------------------------------------------------------------------
+
+DB_PATH_LOCAL = Path(os.getenv("FGPT_DB_PATH_LOCAL", "stores/local"))
+DB_PATH_GLOBAL = Path(os.getenv("FGPT_DB_PATH_LOCAL", "stores/global"))
+EMB_MODEL = Path(os.getenv("FGPT_EMBED_MODEL", "models/bge-base-en-v1.5"))
 COLL_NAME = os.getenv("FGPT_COLLECTION", "fire_docs")
 TOP_K = int(os.getenv("FGPT_TOP_K", "5"))
 
 HOST = os.getenv("FGPT_HOST", "0.0.0.0")
 PORT = int(os.getenv("FGPT_PORT", "7790"))
 
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
 LOG = logging.getLogger("firegpt.fastmcp")
 
+# ----------------------------------------------------------------------------
+# External Clients & Vector Store
+# ----------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Load vector store & embedder once at startup
-# ---------------------------------------------------------------------------
-LOG.info("Opening ChromaDB at %s …", DB_PATH)
-_coll = chromadb.PersistentClient(str(DB_PATH)).get_collection(COLL_NAME)
-LOG.info("Collection “%s” loaded with %d chunks", COLL_NAME, _coll.count())
+# FireGEE API client
+client = FireGEE(base_url="https://api.firefirefire.lol")
 
-LOG.info("Loading MiniLM embedder from %s …", EMB_PATH)
-_EMB = SentenceTransformer(str(EMB_PATH), local_files_only=True)
+# Embedding model - *still needed* at retrieval time!
+# Stored vectors already live on disk, but we have to embed the **query**
+# into the very same vector space before Chroma can run a nearest-neighbour search.
+LOG.info("Loading embeddings from %s …", EMB_MODEL)
+_embedder = HuggingFaceEmbeddings(model_name=str(EMB_MODEL), model_kwargs={"local_files_only": True})
+
+# LangChain → Chroma wrapper
+LOG.info("Connecting to ChromaDB at %s, collection '%s'…", DB_PATH_LOCAL, COLL_NAME)
+_store_local = Chroma(collection_name=COLL_NAME, persist_directory=str(DB_PATH_LOCAL), embedding_function=_embedder)
+
+# LangChain → Chroma wrapper
+LOG.info("Connecting to ChromaDB at %s, collection '%s'…", DB_PATH_GLOBAL, COLL_NAME)
+_store_global = Chroma(collection_name=COLL_NAME, persist_directory=str(DB_PATH_GLOBAL), embedding_function=_embedder)
 
 
-# ---------------------------------------------------------------------------
-# Pydantic schemas (tool / resource I-O)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# Pydantic Schemas
+# ----------------------------------------------------------------------------
+
 class DocHit(BaseModel):
+    """Single vector-search hit."""
+
     id: str
     pdf: str
-    pages: str
-    summary: str
-    full_text: str
+    pages: int
+    text: str
+    score: float
 
 
 class MetaEntry(BaseModel):
+    """Metadata entry for `docs/metadata` resource."""
+
     id: str
     pdf: str
     pages: str
 
 
-# ---------------------------------------------------------------------------
-# FastMCP instance
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# FastMCP Resources & Tools
+# ----------------------------------------------------------------------------
+
 mcp = FastMCP("FireGPT-All-In-One")
 
 
-# ---------------------------------------------------------------------------
-# Document retrieval tools
-# ---------------------------------------------------------------------------
 @mcp.resource("data://docs/metadata")
-def docs_metadata() -> list[MetaEntry]:
-    """Metadata for every ingested section (id, pdf, pages)."""
-    meta = _coll.get(include=["metadatas", "ids"])
-    return [
-        MetaEntry(id=i, pdf=m["pdf"], pages=m["pages"])
-        for i, m in zip(meta["ids"], meta["metadatas"])
-    ]
+def docs_metadata() -> List[MetaEntry]:
+    """Return id, source PDF path and pages for every stored chunk."""
+
+    data = _store_local.get(include=["metadatas", "ids"])
+    entries: List[MetaEntry] = []
+    for idx, meta in zip(data["ids"], data["metadatas"]):
+        entries.append(MetaEntry(id=idx, pdf=meta.get("source", ""), pages=meta.get("pages", "?")))
+    return entries
 
 
 @mcp.tool
-def retrieve_chunks(query: str, k: int = TOP_K) -> list[DocHit]:
-    """Semantic top-k search over section summaries."""
-    qvec = _EMB.encode(query, normalize_embeddings=True).tolist()
-    res = _coll.query(query_embeddings=[qvec], n_results=k)  # list of lists for batch computation
-    return [
-        DocHit(
-            id=i,
-            pdf=m["pdf"],
-            pages=m["pages"],
-            summary=doc,
-            full_text=m.get("full_text", ""),
+def retrieve_chunks_local(
+    query: str,
+    k: int = TOP_K,
+    score_threshold: float | None = 0.2,
+) -> List[DocHit]:
+    """Semantic retrieval with relevance scores of FireFighting SOPs implemented in my region.
+
+    Parameters
+    ----------
+    query : str
+        Natural-language search string.
+    k : int, default *(env FGPT_TOP_K)*
+        Maximum number of hits to return **before** filtering.
+    score_threshold : float | None, default 0.2
+        Drop results whose relevance score is below this value.
+        Set to *None* to disable filtering.
+
+    Returns
+    -------
+    List[DocHit]
+        Vector hits including their similarity score ∈ [0, 1].
+    """
+
+    # Wrapper method embeds the query for us
+    raw_hits = _store_local.similarity_search_with_relevance_scores(query, k=k)
+    filtered_hits: List[DocHit] = []
+    for doc, score in raw_hits:
+        if score_threshold is not None and score < score_threshold:
+            continue
+        meta = doc.metadata or {}
+        filtered_hits.append(
+            DocHit(
+                id=meta.get("id", ""),
+                pdf=meta.get("source", ""),
+                pages=meta.get("pages", -1),
+                text=doc.page_content,
+                score=score,
+            )
         )
-        for i, doc, m in zip(
-            res["ids"][0],  # because we are using a single query
-            res["documents"][0],
-            res["metadatas"][0],
+    return filtered_hits
+
+
+@mcp.tool
+def retrieve_chunks_global(
+    query: str,
+    k: int = TOP_K,
+    score_threshold: float | None = 0.2,
+) -> List[DocHit]:
+    """Semantic retrieval with relevance scores of FireFighting SOPs implemented in my region.
+
+    Parameters
+    ----------
+    query : str
+        Natural-language search string.
+    k : int, default *(env FGPT_TOP_K)*
+        Maximum number of hits to return **before** filtering.
+    score_threshold : float | None, default 0.2
+        Drop results whose relevance score is below this value.
+        Set to *None* to disable filtering.
+
+    Returns
+    -------
+    List[DocHit]
+        Vector hits including their similarity score ∈ [0, 1].
+    """
+
+    # Wrapper method embeds the query for us
+    raw_hits = _store_global.similarity_search_with_relevance_scores(query, k=k)
+    filtered_hits: List[DocHit] = []
+    for doc, score in raw_hits:
+        if score_threshold is not None and score < score_threshold:
+            continue
+        meta = doc.metadata or {}
+        filtered_hits.append(
+            DocHit(
+                id=meta.get("id", ""),
+                pdf=meta.get("source", ""),
+                pages=meta.get("pages", -1),
+                text=doc.page_content,
+                score=score,
+            )
         )
-    ]
-
-
-# ---------------------------------------------------------------------------
-# GEOSPATIAL PLACE-HOLDERS  (wire-up later)
-# ---------------------------------------------------------------------------
-@mcp.resource("data://geo/grid")
-def gee_grid():
-    """AOI grid JSON produced by the GEE pipeline (stub)."""
-    grid = Path("data/geo/grid.json")
-    return json.loads(grid.read_text()) if grid.is_file() else {
-        "status": "grid not yet available"
-    }
+    return filtered_hits
 
 
 @mcp.tool
-def match_objective(lat: float, lon: float):
-    """Stub: returns empty list until geo logic implemented."""
-    return []
+def assess_fire_danger(
+    top_left_lat: float = 47.6969,
+    top_left_lon: float = 7.9468,
+    bottom_right_lat: float = 47.7524,
+    bottom_right_lon: float = 8.0347,
+    subgrid_size_m: int = 100,
+    forecast_hours: int = 3,
+    poi_search_buffer_m: int = 0,
+) -> FireDangerResponse | None:
+    """
+    Assess fire danger at a given bounding box using the FireGEE API. Required parameters:
+    - top_left_lat: Latitude of the top-left corner of the bounding box.
+    - top_left_lon: Longitude of the top-left corner of the bounding box.
+    - bottom_right_lat: Latitude of the bottom-right corner of the bounding box.
+    - bottom_right_lon: Longitude of the bottom-right corner of the bounding box.
+    - subgrid_size_m: Size of the subgrid in meters. Default is 100.
+    - forecast_hours: Number of hours into the future for the GFS forecast. Default is 3.
+    - poi_search_buffer_m: Buffer distance in meters outside the main bounding box to search for Points of Interest.
+                           Default is 0.
+    Uses the FireGEE API to get the fire danger assessment.
+    It divides the given bbox into a grid. At the center of each grid cell, it calcualtes params like vegetation type,
+    vegetation amount, slope, weather, wind speed and direction etc. This could tell in which direction, fire is most
+    likely to spread. Also, it checks if there are any critical buildings near or inside the bounding box. Based on
+    that, it calculates a risk score for each of those buildings.
 
+    Returns a json.
+    """
 
-@mcp.tool
-def risk_score(cell_id: str):
-    """Stub: placeholder risk score."""
-    return {"cell_id": cell_id, "risk": None, "msg": "not implemented"}
-
-
-# ---------------------------------------------------------------------------
-# Entry-point
-# ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    LOG.info("Starting FireGPT FastMCP server ...")
-    d = DocHit.model_json_schema()
-    mcp.run(
-        transport="streamable-http",
-        host=HOST,
-        port=PORT,
+    bbox = BoundingBox(
+        top_left_lat=top_left_lat,
+        top_left_lon=top_left_lon,
+        bottom_right_lat=bottom_right_lat,
+        bottom_right_lon=bottom_right_lon,
     )
+    payload = FireDangerRequest(
+        bbox=bbox,
+        subgrid_size_m=subgrid_size_m,
+        forecast_hours=forecast_hours,
+        poi_search_buffer_m=poi_search_buffer_m,
+    )
+
+    response: Response[FireDangerResponse] = assess_fire_danger_assess_fire_danger_post.sync_detailed(
+        client=client, body=payload
+    )
+
+    if response.status_code == 200:
+        body = json.loads(response.content)
+        return FireDangerResponse(**body)
+
+    LOG.error("FireGEE API error: %s", response.status_code)
+    return None
+
+
+# ----------------------------------------------------------------------------
+# Server Entry Point
+# ----------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    LOG.info("Starting FireGPT FastMCP server on %s:%d …", HOST, PORT)
+    mcp.run(transport="streamable-http", host=HOST, port=PORT)

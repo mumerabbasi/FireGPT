@@ -18,9 +18,10 @@ from __future__ import annotations
 import logging
 import os
 from typing import List
-from pathlib import Path
 import json
 import asyncio
+from src.mcp.forest_fire_gee.models import FireDangerResponse
+
 
 import transformers
 from fastmcp import Client
@@ -88,21 +89,40 @@ async def fetch_chunks(question: str, k: int = TOP_K) -> List[dict]:
     return json.loads(hits_json)  # -> list of dicts
 
 
-def build_prompt(question: str, chunks: List[dict]) -> str:
+async def fetch_fire_danger(
+    top_left_lat: float,
+    top_left_lon: float,
+    bottom_right_lat: float,
+    bottom_right_lon: float,
+    subgrid_size_m: int = 100,
+    forecast_hours: int = 3,
+    poi_search_buffer_m: int = 0,
+) -> FireDangerResponse:
     """
-    Construct the full prompt for the LLM by stitching together:
-    1) a fixed system instruction,
-    2) the raw text of each retrieved document chunk (with PDF name & pages as citation),
-    and 3) the user's question.
+    Call the Fast-MCP tool `assess_fire_danger` and parse its response
+    into a Pydantic FireDangerResponse.
     """
-    # Assemble context from each chunk’s full-text file
-    context_parts = []
-    for c in chunks:
-        text = Path(c["full_text"]).read_text(encoding="utf-8").strip()
-        citation = f"[{c['pdf']} {c['pages']}]"
-        context_parts.append(f"{citation}\n{text}")
+    payload = {
+        "top_left_lat": top_left_lat,
+        "top_left_lon": top_left_lon,
+        "bottom_right_lat": bottom_right_lat,
+        "bottom_right_lon": bottom_right_lon,
+        "subgrid_size_m": subgrid_size_m,
+        "forecast_hours": forecast_hours,
+        "poi_search_buffer_m": poi_search_buffer_m,
+    }
+    # Invoke the MCP tool
+    res = await cli.call_tool("assess_fire_danger", payload)
+    return res
 
+
+def build_prompt(question: str, chunks: list[dict]) -> str:
+    context_parts = [
+        f"[{c['pdf']} {c['pages']}]\n{c['text']}".strip()
+        for c in chunks
+    ]
     context = "\n\n".join(context_parts)
+
     return (
         SYS_PROMPT
         + "\nContext:\n"

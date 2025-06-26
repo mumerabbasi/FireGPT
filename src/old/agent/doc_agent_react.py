@@ -143,39 +143,14 @@ async def tool_retrieve_chunks(query: str, k: int = TOP_K_DOCS) -> ToolResult:
     return json.loads(res[0].text)
 
 
-'''@_tool(
-    name="gee_grid",
+@_tool(
+    name="assess_fire_danger",
     description="Return the cached geo grid (cells with slope, fuel, etc.) for "
     "a region of interest. Args: roi (str, bbox id). Returns GeoJSON.",
 )
 async def tool_gee_grid(roi: str) -> ToolResult:
     res = await cli.call_tool("gee_grid", {"roi": roi})
     return json.loads(res[0].text)
-
-
-@_tool(
-    name="risk_score",
-    description="Get the wildfire risk score for a cell. "
-    "Args: cell_id (str). Returns float 0-1.",
-    schema={
-        "type": "object",
-        "properties": {"cell_id": {"type": "string"}},
-        "required": ["cell_id"],
-    },
-)
-async def tool_risk_score(cell_id: str) -> ToolResult:
-    res = await cli.call_tool("risk_score", {"cell_id": cell_id})
-    return json.loads(res[0].text)
-
-
-@_tool(
-    name="plan_fire_mission",
-    description="Generate way-points for each drone to fight the given fire. "
-    "Args: bbox (str, lat1,lon1,lat2,lon2). Returns JSON plan.",
-)
-async def tool_plan_fire_mission(bbox: str) -> ToolResult:
-    res = await cli.call_tool("plan_fire_mission", {"bbox": bbox})
-    return json.loads(res[0].text)'''
 
 
 # ---------------------------------------------------------------------------
