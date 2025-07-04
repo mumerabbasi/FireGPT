@@ -44,10 +44,10 @@ async def fetch_chunks(question: str, k: int = TOP_K) -> List[dict]:
 
 
 async def fetch_fire_danger(
-    top_left_lat: float,
-    top_left_lon: float,
-    bottom_right_lat: float,
-    bottom_right_lon: float,
+    top_left_lat: float = 47.6969,
+    top_left_lon: float = 7.9468,
+    bottom_right_lat: float = 47.7524,
+    bottom_right_lon: float = 8.0347,
     subgrid_size_m: int = 100,
     forecast_hours: int = 3,
     poi_search_buffer_m: int = 0,
@@ -61,9 +61,6 @@ async def fetch_fire_danger(
         "top_left_lon": top_left_lon,
         "bottom_right_lat": bottom_right_lat,
         "bottom_right_lon": bottom_right_lon,
-        "subgrid_size_m": subgrid_size_m,
-        "forecast_hours": forecast_hours,
-        "poi_search_buffer_m": poi_search_buffer_m,
     }
     # Invoke the MCP tool
     res = await cli.call_tool("assess_fire_danger", payload)
@@ -82,7 +79,7 @@ async def main() -> None:
                 if not q:
                     continue
 
-                chunks = await fetch_chunks(q)
+                chunks = await fetch_fire_danger()
                 if not chunks:
                     print("No relevant document sections found.\n")
                     continue
