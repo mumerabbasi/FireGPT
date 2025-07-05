@@ -272,22 +272,44 @@
       messagesArea.appendChild(msg); messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 
-    function removeAllDocuments() {
+async function removeAllDocuments() {
+  try {
+    const response = await fetch("http://localhost:8000/delete-all", {
+      method: "DELETE",
+    });
+    if (response.ok) {
       uploadedFiles = [];
       sourcesList.innerHTML = '';
+    } else {
+      alert('Failed to delete all documents');
     }
+  } catch (err) {
+    console.error('Error deleting all documents:', err);
+    alert('Network error while deleting documents');
+  }
+}
 
+    fileInput.addEventListener('change', async function () {
 
-    fileInput.addEventListener('change', () => {
-      Array.from(fileInput.files).forEach(file => {
-        if (!uploadedFiles.includes(file.name)) {
+  const files = Array.from(this.files);
+  
+  for (const file of files) {
+    if (!uploadedFiles.includes(file.name)) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('http://localhost:8000/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
           uploadedFiles.push(file.name);
-
-
           const div = document.createElement('div');
           div.className = 'source-item';
           div.textContent = file.name;
-
+          sourcesList.appendChild(div);
           // Add remove (X) button
           const removeBtn = document.createElement('button');
           removeBtn.textContent = '✕';
@@ -296,17 +318,34 @@
           removeBtn.style.border = 'none';
           removeBtn.style.color = 'inherit';
           removeBtn.style.cursor = 'pointer';
-          removeBtn.onclick = function() {
-            uploadedFiles = uploadedFiles.filter(f => f !== file.name);
-            div.remove();
+          removeBtn.onclick = async function () {
+            try {
+              const response = await fetch(`http://localhost:8000/delete/${encodeURIComponent(file.name)}`, {
+                method: 'DELETE'
+              });
+              if (response.ok) {
+                uploadedFiles = uploadedFiles.filter(f => f !== file.name);
+                div.remove();
+              } else {
+                alert(`Failed to delete file: ${file.name}`);
+              }
+            } catch (err) {
+              console.error('Error deleting file:', err);
+              alert('Network error while deleting file');
+            }
           };
           div.appendChild(removeBtn);
-
-          sourcesList.appendChild(div);
-          
-
+        } else {
+          alert('Upload failed: ' + (await response.text()));
         }
-      }); fileInput.value = '';
+      } catch (err) {
+        console.error('Error uploading file:', err);
+        alert('Upload failed: Network error');
+      }
+    }
+  }
+
+   fileInput.value = '';
     });
   </script>
 </body>
