@@ -1,7 +1,10 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request, UploadFile
+from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
+import uuid
+from typing import List, Optional
 
 app = FastAPI()
 
@@ -16,6 +19,8 @@ app.add_middleware(
 
 UPLOAD_DIR = "uploaded_documents"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+CHAT_IMAGE_DIR = "chat_images"
+os.makedirs(CHAT_IMAGE_DIR, exist_ok=True)
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -58,3 +63,31 @@ async def receive_map_features(request: Request):
     print("Received JSON data:")
     print(data)
     return data  # echo back exactly what was received
+
+
+@app.post("/send-chat")
+async def send_chat(
+    message: str = Form(...),
+    images: Optional[List[UploadFile]] = File(None)
+):    
+    saved_image_urls = []
+    print(f"Message: {message}")
+    if images:
+        for image in images:
+            extension = os.path.splitext(image.filename)[1]
+            unique_name = f"{uuid.uuid4()}{extension}"
+            file_path = os.path.join(CHAT_IMAGE_DIR, unique_name)
+            with open(file_path, "wb") as f:
+                f.write(await image.read())
+    else:
+        print("No images uploaded.")
+
+
+    # Simulated response (replace with AI logic)
+    reply = f"I received your message: '{message}'"
+    return {
+        "reply": reply
+    }
+
+    # Mock assistant reply
+    return {"response": "Thanks! I received your message."}
