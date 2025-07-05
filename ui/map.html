@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vertical Icon Selector with Search, Rectangle, Clear Controls</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <!-- Leaflet Control Geocoder for Search -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+  />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+  <style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+  }
+
+    #map {
+    height: 100vh;
+    width: 100vw;
+  }
+
+    .vertical-control {
+      background: white;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+      border-radius: 4px;
+      padding: 4px 2px;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .vertical-control button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 17px;
+      line-height: 1;
+      padding: 4px 2px;
+      user-select: none;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+    }
+    .vertical-control button:hover {
+      background-color: #ddd;
+    }
+    
+    .selected-layer {
+      filter: drop-shadow(0 0 5px #f00);
+    }
+
+    .leaflet-popup-close-button {
+  display: none;
+}
+
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+  const map = L.map('map').setView([45.5236, -122.6750], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
+
+  // Add search control
+  L.Control.geocoder({ defaultMarkGeocode: true }).addTo(map);
+
+  const drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  // Icons
+  const fireIcon = L.icon({
+    iconUrl: 'icons/fire.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40]
+  });
+  const droneIcon = L.icon({
+    iconUrl: 'icons/drone.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40]
+  });
+  const fire_stationIcon = L.icon({
+    iconUrl: 'icons/fire-station.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40]
+  });
+
+  let selectedLayer = null;
+
+  function clearSelection() {
+    if (selectedLayer) {
+      if (selectedLayer._icon) {
+        selectedLayer._icon.classList.remove('selected-layer');
+      } else if (selectedLayer.setStyle) {
+        selectedLayer.setStyle({ color: '#3388ff' });
+      }
+      selectedLayer = null;
+    }
+  }
+
+  drawnItems.on('click', function(e) {
+    clearSelection();
+    selectedLayer = e.layer;
+    if (selectedLayer._icon) {
+      selectedLayer._icon.classList.add('selected-layer');
+    } else if (selectedLayer.setStyle) {
+      selectedLayer.setStyle({ color: 'red' });
+    }
+  });
+
+const VerticalControl = L.Control.extend({
+  onAdd: function(map) {
+    const container = L.DomUtil.create('div', 'vertical-control leaflet-bar');
+
+    const icons = [
+      { name: 'Fire',  icon: fireIcon, type: 'marker' },
+      { name: 'Drone',  icon: droneIcon, type: 'marker' },
+      { name: 'Fire station', icon: fire_stationIcon, type: 'marker' },
+      { name: 'Area',  type: 'rectangle' }
+    ];
+
+    let currentDrawHandler = null;
+
+    const ids = {
+      Fire: 1,
+      Drone: 1,
+      'Fire station': 1,
+      Area: 1
+    };
+
+    function cancelDrawing() {
+      if (currentDrawHandler) {
+        currentDrawHandler.disable();
+        currentDrawHandler = null;
+      }
+    }
+
+    function addCancelOnEscape() {
+      function onKeyDown(e) {
+        if (e.key === 'Escape') cancelDrawing();
+      }
+      document.addEventListener('keydown', onKeyDown, { once: true });
+    }
+
+    icons.forEach(({ name, icon, type }) => {
+      const btn = L.DomUtil.create('button');
+      btn.title = `Draw ${name}`;
+
+      if (type === 'marker') {
+        const img = document.createElement('img');
+        img.src = icon.options.iconUrl;
+        img.style.width = '17px';
+        img.style.height = '17px';
+        btn.appendChild(img);
+      } else {
+        btn.innerText = '⬛'; // Rectangle icon
+      }
+
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        cancelDrawing();
+        clearSelection();
+
+        if (type === 'marker') {
+          currentDrawHandler = new L.Draw.Marker(map, { icon });
+        } else if (type === 'rectangle') {
+          currentDrawHandler = new L.Draw.Rectangle(map);
+        }
+
+        currentDrawHandler.enable();
+
+map.once(L.Draw.Event.CREATED, function(e) {
+  const layer = e.layer;
+  drawnItems.addLayer(layer);
+
+  const count = ids[name]++;
+  const label = `${name.toUpperCase()} ${count}`;
+
+  let popupLatLng;
+
+  if (layer.getLatLng) {
+    popupLatLng = layer.getLatLng();
+  } else if (layer.getBounds) {
+    popupLatLng = layer.getBounds().getCenter();
+  }
+
+  const coordInfo = layer.getLatLng
+    ? `Lat: ${popupLatLng.lat.toFixed(5)}, Lng: ${popupLatLng.lng.toFixed(5)}`
+    : (() => {
+        const bounds = layer.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        return `
+          <b>SW:</b> (${sw.lat.toFixed(5)}, ${sw.lng.toFixed(5)})<br>
+          <b>NE:</b> (${ne.lat.toFixed(5)}, ${ne.lng.toFixed(5)})
+        `;
+      })();
+
+  // Default popup content (without description)
+  const defaultPopupContent = `${label}<br>${coordInfo}`;
+
+  // Create form HTML
+  const formHtml = `
+    <form id="desc-form" style="min-width: 200px;">
+      <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
+      <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
+      <small>${coordInfo}</small><br>
+      <button type="submit" style="margin-top: 6px;">Save</button>
+      <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
+    </form>
+  `;
+
+  const popup = L.popup({ closeOnClick: false, autoClose: false })
+    .setLatLng(popupLatLng)
+    .setContent(formHtml)
+    .openOn(map);
+
+  function closePopup() {
+    map.closePopup(popup);
+    document.removeEventListener('click', onDocumentClick, true);
+  }
+
+  const form = document.getElementById('desc-form');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const textarea = document.getElementById('desc-input');
+  textarea.focus();
+
+  // Save form on submit
+  form.addEventListener('submit', (evt) => {
+    evt.preventDefault();
+    const desc = textarea.value.trim();
+
+    const fullLabel = desc
+      ? `${label}: ${desc}<br>${coordInfo}`
+      : defaultPopupContent;
+
+    layer.bindPopup(fullLabel);
+    closePopup();
+  });
+
+  // Cancel button resets popup to default content and closes form
+  cancelBtn.addEventListener('click', () => {
+    layer.bindPopup(defaultPopupContent);
+    closePopup();
+  });
+
+  // Allow Enter (without Shift) to submit the form, Shift+Enter adds new line
+  textarea.addEventListener('keydown', (evt) => {
+    if (evt.key === 'Enter' && !evt.shiftKey) {
+      evt.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  // New: Click outside popup closes popup and saves default content
+  function onDocumentClick(e) {
+    const popupContainer = document.querySelector('.leaflet-popup-content');
+    if (popupContainer && !popupContainer.contains(e.target)) {
+      layer.bindPopup(defaultPopupContent);
+      closePopup();
+    }
+  }
+  document.addEventListener('click', onDocumentClick, true);
+
+  currentDrawHandler = null;
+});
+
+
+        addCancelOnEscape();
+      };
+
+      container.appendChild(btn);
+    });
+
+    // Clear Selected button
+    const clearSelectedBtn = L.DomUtil.create('button');
+    clearSelectedBtn.title = 'Clear Selected';
+    clearSelectedBtn.innerText = '✖️';
+    clearSelectedBtn.style.color = 'red';
+
+    clearSelectedBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (selectedLayer) {
+        drawnItems.removeLayer(selectedLayer);
+        selectedLayer = null;
+      } else {
+        const center = map.getCenter();
+        const noSelectionPopup = L.popup({
+          closeButton: true,
+          autoClose: true,
+          closeOnClick: true,
+          className: 'custom-popup'
+        })
+        .setLatLng(center)
+        .setContent('<b>No shape selected to clear!</b>')
+        .openOn(map);
+      }
+    };
+    container.appendChild(clearSelectedBtn);
+
+    // Clear All button
+    const clearAllBtn = L.DomUtil.create('button');
+    clearAllBtn.title = 'Clear All';
+    clearAllBtn.innerText = '🗑️';
+    clearAllBtn.style.color = 'darkred';
+
+    clearAllBtn.onclick = (e) => {
+      e.stopPropagation();
+      drawnItems.clearLayers();
+      selectedLayer = null;
+
+      // Reset all ids
+      Object.keys(ids).forEach(k => ids[k] = 1);
+    };
+    container.appendChild(clearAllBtn);
+
+    // Save Map Features button
+    const saveBtn = L.DomUtil.create('button');
+    saveBtn.title = 'Save Map Features';
+    saveBtn.innerText = '💾';
+    saveBtn.style.color = 'green';
+
+    saveBtn.onclick = (e) => {
+      e.stopPropagation();
+
+      extract_map_features_post();
+    };
+    container.appendChild(saveBtn);
+
+    return container;
+  }
+});
+
+map.addControl(new VerticalControl({ position: 'topleft' }));
+
+
+
+////////////////////////////////////////////////////////////////////////
+function extract_map_features_post() {
+  const map_features = [];
+
+  drawnItems.eachLayer(layer => {
+    let name = '';
+    let id = 0;
+    let description = '';
+    let coordinates = null;
+
+    if (layer instanceof L.Marker) {
+      const popupContent = layer.getPopup() ? layer.getPopup().getContent() : '';
+      const nameMatch = popupContent.match(/([A-Z ]+)(\d+)/);
+      if (nameMatch) {
+        name = nameMatch[1].trim();
+        id = parseInt(nameMatch[2]);
+      }
+
+      const descMatch = popupContent.match(/:\s*(.*)<br>/);
+      description = descMatch ? descMatch[1].trim() : '';
+
+      const latlng = layer.getLatLng();
+      coordinates = { lat: latlng.lat, lng: latlng.lng };
+
+    } else if (layer instanceof L.Rectangle) {
+      const popupContent = layer.getPopup() ? layer.getPopup().getContent() : '';
+      const nameMatch = popupContent.match(/([A-Z ]+)(\d+)/);
+      if (nameMatch) {
+        name = nameMatch[1].trim();
+        id = parseInt(nameMatch[2]);
+      }
+
+      const descMatch = popupContent.match(/^[^:<]+:\s*(.*?)<br>/);
+      description = descMatch ? descMatch[1].trim() : '';
+
+      const bounds = layer.getBounds();
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+
+      coordinates = {
+        sw: { lat: sw.lat, lng: sw.lng },
+        ne: { lat: ne.lat, lng: ne.lng }
+      };
+    }
+
+    map_features.push({ name, id, description, coordinates });
+  });
+
+  const data = { map_features };
+
+  fetch('http://localhost:8000/map_features', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(response => {
+    // alert(`Server Response: ${response.status}, map_features received: ${response.received_count}`);
+  })
+  .catch(err => {
+    alert('Error sending map map_features: ' + err);
+  });
+}
+
+
+</script>
+
+</body>
+</html>

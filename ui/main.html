@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FireGPT - AI Chat Interface</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #ffffff;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: #2d2d2d;
+      border-bottom: 1px solid #404040;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 1000;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #ff6b35, #ff8e3c);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #2d2d2d;
+      border-right: 1px solid #404040;
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #404040;
+    }
+
+    .sidebar-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .add-btn {
+      background: #404040;
+      border: none;
+      color: #ffffff;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .add-btn:hover {
+      background: #505050;
+    }
+
+    .sources-section {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .source-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      color: #e0e0e0;
+      font-size: 14px;
+      word-break: break-word;
+      white-space: normal;
+      flex-wrap: wrap;
+    }
+
+    .main-content {
+      flex: 0.7;
+      display: flex;
+      flex-direction: column;
+      padding-top: 60px;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 20px;
+      border-bottom: 1px solid #404040;
+    }
+
+    .chat-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .messages-area {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 15px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .message.user {
+      background: #6b9eff;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .message.assistant {
+      background: #404040;
+      color: #ffffff;
+      align-self: flex-start;
+    }
+
+    .input-area {
+      padding: 20px;
+      border-top: 1px solid #404040;
+      background: #2d2d2d;
+    }
+
+    .input-container {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input {
+      width: 100%;
+      background: #404040;
+      border: 1px solid #606060;
+      border-radius: 12px;
+      padding: 12px 50px 12px 16px;
+      color: #ffffff;
+      font-size: 14px;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+      font-family: inherit;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #6b9eff;
+    }
+
+    .chat-input::placeholder {
+      color: #909090;
+    }
+
+    .send-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      background: #6b9eff;
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .send-btn:hover {
+      background: #5a8bef;
+    }
+
+    .send-btn:disabled {
+      background: #505050;
+      cursor: not-allowed;
+    }
+
+    .right-sidebar {
+      flex: 1.3;
+      background: #2d2d2d;
+      border-left: 1px solid #404040;
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Removed the right-sidebar-header and title styles since the title is removed */
+
+    .map-container {
+      flex: 1;
+      height: 100%;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .map-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar, .right-sidebar {
+        width: 250px;
+      }
+
+      .right-sidebar {
+        width: 300px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .sidebar, .right-sidebar {
+        position: fixed;
+        top: 60px;
+        left: -100%;
+        height: calc(100vh - 60px);
+        z-index: 999;
+        transition: left 0.3s;
+      }
+
+      .right-sidebar {
+        left: 100%;
+        width: 90%;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .right-sidebar.open {
+        left: 10%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">🔥</div>
+        <div class="logo-text">FireGPT</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Sources</div>
+        <button class="add-btn" onclick="document.getElementById('fileInput').click()">
+          <span>+</span>
+          <span>Add</span>
+        </button>
+        <input id="fileInput" type="file" multiple style="display: none;" />
+      </div>
+      <div class="sources-section" id="sourcesList">
+        <!-- Files will be listed here -->
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-title">Chat</div>
+        </div>
+        <div class="messages-area">
+          <div class="message assistant">
+            Welcome to FireGPT! I'm here to help you with your questions and tasks. You can upload documents, ask questions, and get comprehensive answers based on your sources.
+          </div>
+        </div>
+        <div class="input-area">
+          <div class="input-container">
+            <div class="input-wrapper">
+              <textarea class="chat-input" placeholder="Start typing..." rows="1"></textarea>
+              <button class="send-btn" disabled><span>→</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-sidebar">
+      <!-- Removed the right-sidebar-header and title to remove the map title -->
+      <div class="map-container">
+        <iframe src="map.html" class="map-frame" title="Emergency Response Map"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatInput = document.querySelector('.chat-input');
+    const sendBtn = document.querySelector('.send-btn');
+    const messagesArea = document.querySelector('.messages-area');
+    const fileInput = document.getElementById('fileInput');
+    const sourcesList = document.getElementById('sourcesList');
+
+    let uploadedFiles = [];
+
+    chatInput.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+      sendBtn.disabled = this.value.trim() === '';
+    });
+
+    function sendMessage() {
+      const message = chatInput.value.trim();
+      if (message) {
+        const userMessage = document.createElement('div');
+        userMessage.className = 'message user';
+        userMessage.textContent = message;
+        messagesArea.appendChild(userMessage);
+
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+        sendBtn.disabled = true;
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+
+
+        extract_map_features_post();
+
+        setTimeout(() => {
+          const aiMessage = document.createElement('div');
+          aiMessage.className = 'message assistant';
+          aiMessage.textContent = `I understand your question about "${message}". Let me help you with that based on the available sources.`;
+          messagesArea.appendChild(aiMessage);
+          messagesArea.scrollTop = messagesArea.scrollHeight;
+        }, 1000);
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    fileInput.addEventListener('change', function () {
+      for (const file of this.files) {
+        if (!uploadedFiles.includes(file.name)) {
+          uploadedFiles.push(file.name);
+
+          const div = document.createElement('div');
+          div.className = 'source-item';
+          div.innerHTML = `<span style="max-width: 160px; display: inline-block;">${file.name}</span>`;
+          sourcesList.appendChild(div);
+        }
+      }
+      fileInput.value = '';
+    });
+  </script>
+</body>
+</html>
