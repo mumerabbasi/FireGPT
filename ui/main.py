@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
@@ -27,6 +27,13 @@ async def upload_file(file: UploadFile = File(...)):
 
     return {"filename": file.filename, "status": "uploaded"}
 
+@app.get("/list-files")
+async def list_files():
+    try:
+        return os.listdir(UPLOAD_DIR)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Could not list files")
+
 @app.delete("/delete/{filename}")
 async def delete_file(filename: str):
     file_path = os.path.join(UPLOAD_DIR, filename)
@@ -34,7 +41,6 @@ async def delete_file(filename: str):
         os.remove(file_path)
         return {"status": "deleted", "filename": filename}
     raise HTTPException(status_code=404, detail="File not found")
-
 
 @app.delete("/delete-all")
 async def delete_all_files():
@@ -44,3 +50,11 @@ async def delete_all_files():
         os.remove(file_path)
         deleted.append(filename)
     return {"status": "all_deleted", "files": deleted}
+
+
+@app.post("/map_features")
+async def receive_map_features(request: Request):
+    data = await request.json()  # receive any JSON
+    print("Received JSON data:")
+    print(data)
+    return data  # echo back exactly what was received

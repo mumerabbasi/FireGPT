@@ -289,64 +289,86 @@ async function removeAllDocuments() {
   }
 }
 
-    fileInput.addEventListener('change', async function () {
+  fileInput.addEventListener('change', async function () {
+      const files = Array.from(this.files);
+      for (const file of files) {
+        if (!uploadedFiles.includes(file.name)) {
+          const formData = new FormData();
+          formData.append('file', file);
+          try {
+            const response = await fetch('http://localhost:8000/upload', {
+              method: 'POST',
+              body: formData,
+            });
 
-  const files = Array.from(this.files);
-  
-  for (const file of files) {
-    if (!uploadedFiles.includes(file.name)) {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const response = await fetch('http://localhost:8000/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          uploadedFiles.push(file.name);
-          const div = document.createElement('div');
-          div.className = 'source-item';
-          div.textContent = file.name;
-          sourcesList.appendChild(div);
-          // Add remove (X) button
-          const removeBtn = document.createElement('button');
-          removeBtn.textContent = '✕';
-          removeBtn.style.marginLeft = '10px';
-          removeBtn.style.background = 'none';
-          removeBtn.style.border = 'none';
-          removeBtn.style.color = 'inherit';
-          removeBtn.style.cursor = 'pointer';
-          removeBtn.onclick = async function () {
-            try {
-              const response = await fetch(`http://localhost:8000/delete/${encodeURIComponent(file.name)}`, {
-                method: 'DELETE'
-              });
-              if (response.ok) {
-                uploadedFiles = uploadedFiles.filter(f => f !== file.name);
-                div.remove();
-              } else {
-                alert(`Failed to delete file: ${file.name}`);
-              }
-            } catch (err) {
-              console.error('Error deleting file:', err);
-              alert('Network error while deleting file');
+            if (response.ok) {
+              uploadedFiles.push(file.name);
+              addSourceItem(file.name);
+            } else {
+              alert('Upload failed: ' + (await response.text()));
             }
-          };
-          div.appendChild(removeBtn);
+          } catch (err) {
+            console.error('Error uploading file:', err);
+            alert('Upload failed: Network error');
+          }
+        }
+      }
+      fileInput.value = '';
+    });
+
+    // ✅ NEW: Load uploaded files from backend on page load
+    async function loadUploadedFiles() {
+      try {
+        const response = await fetch("http://localhost:8000/list-files");
+        if (response.ok) {
+          const files = await response.json();
+          uploadedFiles = files;
+          files.forEach(filename => addSourceItem(filename));
         } else {
-          alert('Upload failed: ' + (await response.text()));
+          console.error("Failed to fetch file list.");
         }
       } catch (err) {
-        console.error('Error uploading file:', err);
-        alert('Upload failed: Network error');
+        console.error("Error fetching uploaded files:", err);
       }
     }
-  }
 
-   fileInput.value = '';
-    });
+    // ✅ Add a file to the source list in UI
+    function addSourceItem(filename) {
+      const div = document.createElement('div');
+      div.className = 'source-item';
+      div.textContent = filename;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = '✕';
+      removeBtn.style.marginLeft = '10px';
+      removeBtn.style.background = 'none';
+      removeBtn.style.border = 'none';
+      removeBtn.style.color = 'inherit';
+      removeBtn.style.cursor = 'pointer';
+
+      removeBtn.onclick = async function () {
+        try {
+          const response = await fetch(`http://localhost:8000/delete/${encodeURIComponent(filename)}`, {
+            method: 'DELETE'
+          });
+          if (response.ok) {
+            uploadedFiles = uploadedFiles.filter(f => f !== filename);
+            div.remove();
+          } else {
+            alert(`Failed to delete file: ${filename}`);
+          }
+        } catch (err) {
+          console.error('Error deleting file:', err);
+          alert('Network error while deleting file');
+        }
+      };
+
+      div.appendChild(removeBtn);
+      sourcesList.appendChild(div);
+    }
+
+    // ✅ Load on page ready
+    window.addEventListener("DOMContentLoaded", loadUploadedFiles);
   </script>
 </body>
 </html>
