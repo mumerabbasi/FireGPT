@@ -211,9 +211,9 @@ def assess_fire_danger(
 
     Returns a json.
     """
-    subgrid_size_m: int = 5,
-    forecast_hours: int = 2,
-    poi_search_buffer_m: int = 100,
+    subgrid_size_m: int = 15
+    forecast_hours: int = 3
+    poi_search_buffer_m: int = 1000
     bbox = BoundingBox(
         top_left_lat=top_left_lat,
         top_left_lon=top_left_lon,
@@ -232,7 +232,7 @@ def assess_fire_danger(
     response: Response[FireDangerResponse] = assess_fire_danger_assess_fire_danger_post.sync_detailed(
         client=client, body=payload
     )
-
+    print(response)
     if response.status_code == 200:
         body = json.loads(response.content)
         return FireDangerResponse(**body)
