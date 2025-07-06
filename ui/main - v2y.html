@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FireGPT - AI Chat Interface</title>
   <style>
-    /* ====== CSS Variables ====== */
     :root {
       --bg-dark: #1a1a1a;
       --bg-secondary: #2d2d2d;
@@ -17,8 +15,6 @@
       --text-light: #ffffff;
       --text-muted: #909090;
     }
-
-    /* Light theme overrides */
     html[data-theme="light"] {
       --bg-dark: #ffffff;
       --bg-secondary: #f5f5f5;
@@ -29,21 +25,17 @@
       --text-light: #000000;
       --text-muted: #606060;
     }
-
     :root {
       --padding-base: 16px;
       --radius: 8px;
       --transition: 0.3s;
       color-scheme: light dark;
     }
-
-    /* ====== Reset ====== */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
     html,
     body {
       height: 100%;
@@ -53,13 +45,10 @@
       color: var(--text-light);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-
-    /* ====== Layout ====== */
     .container {
       display: flex;
       height: 100%;
     }
-
     .header {
       position: fixed;
       top: 0;
@@ -74,35 +63,27 @@
       padding: 0 var(--padding-base);
       z-index: 1000;
     }
-
     .logo {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-
-    /* Theme toggle button */
     .theme-toggle {
       background: none;
       border: none;
       cursor: pointer;
       padding: 4px;
     }
-
     .theme-toggle img {
       width: 24px;
       height: 24px;
     }
-
     html[data-theme="dark"] .theme-toggle img {
       filter: none;
     }
-
     html[data-theme="light"] .theme-toggle img {
       filter: invert(100%);
     }
-
-    /* ====== Sidebars ====== */
     .sidebar,
     .right-sidebar {
       background: var(--bg-secondary);
@@ -112,7 +93,6 @@
       flex-direction: column;
       width: 220px;
     }
-
     .sidebar {
       background: var(--bg-secondary);
       border: 1px solid var(--border-color);
@@ -124,23 +104,18 @@
       width: 350px;
       min-width: 300px;
     }
-
     .right-sidebar {
       flex: 0.7 1 220px;
     }
-
     .sidebar-header {
       padding: var(--padding-base);
       border-bottom: 1px solid var(--border-color);
     }
-
     .sidebar-title {
       font-size: 16px;
       font-weight: 600;
       margin-bottom: var(--padding-base);
     }
-
-    /* Add Documents button */
     .add-btn {
       background: var(--bg-tertiary);
       border: none;
@@ -156,70 +131,59 @@
       gap: 8px;
       transition: filter var(--transition);
     }
-
+    .add-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     .add-btn img {
       width: 24px;
       height: 24px;
     }
-
     html[data-theme="dark"] .add-btn img {
       filter: none;
     }
-
     html[data-theme="light"] .add-btn img {
       filter: invert(100%);
     }
-
     .add-btn span {
       display: inline-block;
     }
-
-    .add-btn:hover {
+    .add-btn:hover:not(:disabled) {
       filter: brightness(1.1);
     }
-
     .sources-section {
       flex: 1;
       overflow-y: auto;
       padding: var(--padding-base);
     }
-
     .source-item {
       padding: 8px 0;
       font-size: 14px;
       color: var(--text-muted);
       word-break: break-all;
     }
-
     .source-item button:hover {
       color: #d32f2f;
     }
-
-
-    /* ====== Main ====== */
     .main-content {
       display: flex;
       flex: 1.3 1 0;
       height: 100%;
       padding-top: 60px;
     }
-
     .chat-container {
       display: flex;
       flex-direction: column;
       width: 100%;
     }
-
     .chat-header {
       padding: var(--padding-base);
       border-bottom: 1px solid var(--border-color);
     }
-
     .chat-title {
       font-size: 18px;
       font-weight: 600;
     }
-
     .messages-area {
       flex: 1;
       padding: var(--padding-base);
@@ -228,7 +192,6 @@
       flex-direction: column;
       gap: 12px;
     }
-
     .message {
       max-width: 80%;
       padding: 12px var(--padding-base);
@@ -238,28 +201,21 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       word-break: break-word;
     }
-
     .message.user {
       background: #0078d4;
-      /* vivid blue for strong contrast */
       color: #ffffff;
       align-self: flex-end;
     }
-
     .message.assistant {
       background: #353535;
-      /* darker, higher contrast */
       color: #ffffff;
       align-self: flex-start;
     }
-
     .message img {
       max-width: 200px;
       border-radius: 6px;
       margin-top: 8px;
     }
-
-    /* ====== Input ====== */
     .input-area {
       position: sticky;
       bottom: 0;
@@ -271,7 +227,6 @@
       gap: 8px;
       z-index: 500;
     }
-
     .preview-area {
       display: flex;
       flex-wrap: wrap;
@@ -279,30 +234,25 @@
       max-height: calc(50px * 2 + 8px);
       overflow-y: auto;
     }
-
     .preview-area img {
       width: 50px;
       height: 50px;
       object-fit: cover;
       border-radius: var(--radius);
     }
-
     .input-row {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-
     .chat-input {
       flex: 1;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
-      /* tighten initial height to one line */
       padding: 8px;
       line-height: 1.8;
       min-height: calc(1.8em + 18px);
-      /* auto-resize up to max */
       max-height: 160px;
       overflow-y: auto;
       color: var(--text-light);
@@ -314,36 +264,27 @@
       unicode-bidi: plaintext;
       text-align: left;
     }
-
-    /* Custom scrollbar for input area */
     .chat-input::-webkit-scrollbar {
       width: 6px;
     }
-
     .chat-input::-webkit-scrollbar-track {
       background: transparent;
     }
-
     .chat-input::-webkit-scrollbar-thumb {
       background-color: var(--text-muted);
       border-radius: 3px;
     }
-
-    /* Firefox scrollbar */
     .chat-input {
       scrollbar-width: thin;
       scrollbar-color: var(--text-muted) transparent;
     }
-
     .chat-input:focus {
       outline: none;
       border-color: var(--accent);
     }
-
     .chat-input::placeholder {
       color: var(--text-muted);
     }
-
     .file-btn,
     .send-btn {
       background: var(--bg-tertiary);
@@ -359,57 +300,44 @@
       transition: filter var(--transition);
       padding: 0;
     }
-
     .file-btn img,
     .send-btn img {
       width: 24px;
       height: 24px;
     }
-
     html[data-theme="dark"] .file-btn img,
     html[data-theme="dark"] .send-btn img {
       filter: none;
     }
-
     html[data-theme="light"] .file-btn img,
     html[data-theme="light"] .send-btn img {
       filter: invert(100%);
     }
-
     .file-btn:hover,
     .send-btn:hover:not(:disabled) {
       filter: brightness(1.2);
     }
-
     .send-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-
-    /* ====== Map ====== */
     .map-container {
       flex: 1;
       padding: var(--padding-base);
     }
-
     .map-frame {
       width: 100%;
       height: 100%;
       border: none;
       border-radius: var(--radius);
     }
-
-    /* ====== Responsive ====== */
     @media (max-width: 768px) {
-
       .sidebar,
       .right-sidebar {
         width: 250px;
       }
     }
-
     @media (max-width: 640px) {
-
       .sidebar,
       .right-sidebar {
         position: fixed;
@@ -417,20 +345,16 @@
         height: calc(100% - 60px);
         transition: transform var(--transition);
       }
-
       .sidebar {
         transform: translateX(-100%);
       }
-
       .sidebar.open {
         transform: translateX(0);
       }
-
       .right-sidebar {
         transform: translateX(100%);
         width: 90%;
       }
-
       .right-sidebar.open {
         transform: translateX(-10%);
       }
@@ -448,12 +372,11 @@
       <button class="theme-toggle" onclick="toggleTheme()"><img src="./icons/darklight.png"
           alt="Toggle Theme" /></button>
     </header>
-
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2 class="sidebar-title">Sources</h2>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button class="add-btn" onclick="fileInput.click()">
+          <button class="add-btn" id="addDocumentsBtn" onclick="fileInput.click()">
             <img src="./icons/adddocuments.png" alt="Add Documents" />
             <span>Add Documents</span>
           </button>
@@ -465,7 +388,6 @@
       </div>
       <div class="sources-section" id="sourcesList"></div>
     </aside>
-
     <main class="main-content">
       <section class="chat-container">
         <div class="chat-header">
@@ -511,17 +433,24 @@
     const previewArea = document.getElementById('previewArea');
     const chatInput = document.querySelector('.chat-input');
     const sendBtn = document.querySelector('.send-btn');
+    const addDocumentsBtn = document.getElementById('addDocumentsBtn');
     const messagesArea = document.getElementById('messagesArea');
     let uploadedFiles = [];
 
+    // --- Block double send (send button logic) ---
+    let isWaitingForResponse = false;
+    // --- Block double upload (Add Documents button logic) ---
+    let isUploadingDocuments = false;
+
     // Auto-resize textarea up to 5 lines (~130px)
     chatInput.addEventListener('input', () => {
-      // resize logic
       chatInput.style.height = 'auto';
-      const maxHeight = 160; // approx. 6 lines // approx. 5 lines
+      const maxHeight = 160; // ~5 lines
       chatInput.style.height = Math.min(chatInput.scrollHeight, maxHeight) + 'px';
-      // enable send
-      sendBtn.disabled = !chatInput.value.trim() && !imageInput.files.length;
+      // enable send only if not waiting for response
+      if (!isWaitingForResponse) {
+        sendBtn.disabled = !chatInput.value.trim() && !imageInput.files.length;
+      }
     });
 
     imageInput.addEventListener('change', () => {
@@ -532,11 +461,17 @@
         img.src = url;
         previewArea.appendChild(img);
       });
-      sendBtn.disabled = false;
+      if (!isWaitingForResponse) {
+        sendBtn.disabled = false;
+      }
     });
 
-    /*---------------------------------------------------*/
     async function sendMessage() {
+      // Prevent duplicate sends
+      if (isWaitingForResponse) return;
+      isWaitingForResponse = true;
+      sendBtn.disabled = true;
+
       const text = chatInput.value.trim();
       const images = Array.from(imageInput.files);
 
@@ -555,13 +490,11 @@
         formData.append("images", file); // FastAPI will receive as a list
       });
 
-      // Send to backend
       try {
         const response = await fetch("http://localhost:8000/send-chat", {
           method: "POST",
           body: formData,
         });
-
         const result = await response.json();
         if (response.ok) {
           if (result.reply) appendMessage(result.reply, 'assistant');
@@ -573,17 +506,26 @@
         appendMessage("Network error", 'assistant');
       }
 
-      // Reset inputs
+      // Reset input UI
       chatInput.value = '';
       imageInput.value = '';
       previewArea.innerHTML = '';
       chatInput.style.height = 'auto';
-      sendBtn.disabled = true;
+
+      // Done waiting, re-enable sendBtn only if there is text or images
+      isWaitingForResponse = false;
+      sendBtn.disabled = !(chatInput.value.trim() || imageInput.files.length);
     }
-    /*---------------------------------------------------*/
 
     sendBtn.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+    chatInput.addEventListener('keydown', e => {
+      // Allow send only if not waiting for response
+      if (e.key === 'Enter' && !e.shiftKey && !isWaitingForResponse) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
 
     function appendMessage(text, role) {
       const msg = document.createElement('div'); msg.className = `message ${role}`; msg.textContent = text;
@@ -612,7 +554,12 @@
       }
     }
 
+    // Add Documents button disables during upload
     fileInput.addEventListener('change', async function () {
+      if (isUploadingDocuments) return;
+      isUploadingDocuments = true;
+      addDocumentsBtn.disabled = true;
+
       const files = Array.from(this.files);
       for (const file of files) {
         if (!uploadedFiles.includes(file.name)) {
@@ -637,9 +584,11 @@
         }
       }
       fileInput.value = '';
+      isUploadingDocuments = false;
+      addDocumentsBtn.disabled = false;
     });
 
-    // ✅ NEW: Load uploaded files from backend on page load
+    // Load uploaded files from backend on page load
     async function loadUploadedFiles() {
       try {
         const response = await fetch("http://localhost:8000/list-files");
@@ -654,8 +603,6 @@
         console.error("Error fetching uploaded files:", err);
       }
     }
-
-    // ✅ Add a file to the source list in UI
     function addSourceItem(filename) {
       const div = document.createElement('div');
       div.className = 'source-item';
@@ -690,9 +637,7 @@
       sourcesList.appendChild(div);
     }
 
-    // ✅ Load on page ready
     window.addEventListener("DOMContentLoaded", loadUploadedFiles);
   </script>
 </body>
-
 </html>
