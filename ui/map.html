@@ -261,7 +261,6 @@ const VerticalControl = L.Control.extend({
       btn.appendChild(img);
 
       btn.onclick = (e) => {
-        btn.disable = true;
         e.stopPropagation();
         cancelDrawing();
         clearSelection();
