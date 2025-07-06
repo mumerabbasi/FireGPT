@@ -380,7 +380,7 @@
             <img src="./icons/adddocuments.png" alt="Add Documents" />
             <span>Add Documents</span>
           </button>
-          <button class="add-btn" onclick="removeAllDocuments()" style="background: #d32f2f;" title="Remove All">
+          <button class="add-btn" id="removeAllDocumentsBtn" onclick="removeAllDocuments()" style="background: #d32f2f;" title="Remove All">
             <img src="./icons/delete.png" alt="Remove All" /><span>Remove All</span>
           </button>
         </div>
@@ -521,7 +521,7 @@
 
     chatInput.addEventListener('keydown', e => {
       // Allow send only if not waiting for response
-      if (e.key === 'Enter' && !e.shiftKey && !isWaitingForResponse) {
+      if (e.key === 'Enter' && !e.shiftKey && !isWaitingForResponse && !sendBtn.disabled) {
         e.preventDefault();
         sendMessage();
       }
@@ -538,6 +538,7 @@
     }
 
     async function removeAllDocuments() {
+      removeAllDocumentsBtn.disabled = true;
       try {
         const response = await fetch("http://localhost:8000/delete-all", {
           method: "DELETE",
@@ -552,6 +553,7 @@
         console.error('Error deleting all documents:', err);
         alert('Network error while deleting documents');
       }
+      removeAllDocumentsBtn.disabled = false;
     }
 
     // Add Documents button disables during upload
@@ -617,6 +619,7 @@
       removeBtn.style.cursor = 'pointer';
 
       removeBtn.onclick = async function () {
+        removeBtn.disabled = true
         try {
           const response = await fetch(`http://localhost:8000/delete/${encodeURIComponent(filename)}`, {
             method: 'DELETE'
@@ -625,6 +628,7 @@
             uploadedFiles = uploadedFiles.filter(f => f !== filename);
             div.remove();
           } else {
+            removeBtn.disabled = false
             alert(`Failed to delete file: ${filename}`);
           }
         } catch (err) {

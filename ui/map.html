@@ -261,6 +261,7 @@ const VerticalControl = L.Control.extend({
       btn.appendChild(img);
 
       btn.onclick = (e) => {
+        btn.disable = true;
         e.stopPropagation();
         cancelDrawing();
         clearSelection();
@@ -500,6 +501,16 @@ map.whenReady(() => {
 
 ////////////////////////////////////////////////////////////////////////
 function extract_map_features_post() {
+  const saveButton = [...document.querySelectorAll('.vertical-control .control-item')]
+    .find(el => el.querySelector('span')?.innerText === 'Save')
+    ?.querySelector('button');
+
+  if (saveButton) {
+    saveButton.disabled = true;
+    saveButton.style.opacity = 0.5;
+    saveButton.style.pointerEvents = 'none';
+  }
+
   const map_features = [];
 
   drawnItems.eachLayer(layer => {
@@ -557,12 +568,20 @@ function extract_map_features_post() {
   })
   .then(res => res.json())
   .then(response => {
-    // alert(`Server Response: ${response.status}, map_features received: ${response.received_count}`);
+    console.log(`Server Response: ${response.status}, map_features received: ${response.received_count}`);
   })
   .catch(err => {
     alert('Error sending map map_features: ' + err);
+  })
+  .finally(() => {
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.style.opacity = 1;
+      saveButton.style.pointerEvents = 'auto';
+    }
   });
 }
+
 </script>
 </body>
 </html>
