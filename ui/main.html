@@ -66,14 +66,28 @@
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       padding: 0 var(--padding-base);
       z-index: 1000;
+    }
+
+    .logo-img {
+      height: 125px;
+      display: block;
+    }
+
+    html[data-theme="light"] .logo-img {
+      filter: invert(100%);
+    }
+
+    html[data-theme="dark"] .logo-img {
+      filter: none;
     }
 
     .logo {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
     }
 
@@ -82,6 +96,10 @@
       border: none;
       cursor: pointer;
       padding: 4px;
+      position: absolute;
+      right: var(--padding-base);
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .theme-toggle img {
@@ -429,8 +447,7 @@
   <div class="container">
     <header class="header">
       <div class="logo">
-        <div class="logo-icon">🔥</div>
-        <div class="logo-text">FireGPT</div>
+        <img src="./icons/logo.png" alt="FireGPT Logo" class="logo-img" />
       </div>
       <button class="theme-toggle" onclick="toggleTheme()"><img src="./icons/darklight.png"
           alt="Toggle Theme" /></button>
@@ -577,6 +594,13 @@
       });
       formData.append("map_features", map_features);
 
+      // Reset input UI
+      chatInput.value = '';
+      imageInput.value = '';
+      previewArea.innerHTML = '';
+      chatInput.style.height = 'auto';
+
+      // Fetch 
       try {
         const response = await fetch(backend_url + "/send-chat", {
           method: "POST",
