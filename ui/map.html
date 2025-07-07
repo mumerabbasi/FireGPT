@@ -505,7 +505,28 @@
             }
             else if (type === 'save') {
               clearSelection();
-              extract_map_features_post();
+              // extract_map_features_post();
+
+              // const pathList = [
+              //   [
+              //     { lat: 40.7128, lng: -74.0060 },
+              //     { lat: 40.7308, lng: -73.9975 }
+              //   ],
+              //   [
+              //     { lat: 34.0522, lng: -118.2437 },
+              //     { lat: 34.0407, lng: -118.2468 }
+              //   ],
+              //   [
+              //     { lat: 51.5074, lng: -0.1278 },
+              //     { lat: 51.5155, lng: -0.0922 }
+              //   ]
+              // ];
+
+              // pathList.forEach(coords => {
+              //   drawWaypointPath(coords);
+              // });
+
+
             }
           };
 
@@ -528,18 +549,20 @@
     });
 
     ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
     function extract_map_features_post() {
-      const saveButton = [...document.querySelectorAll('.vertical-control .control-item')]
-        .find(el => el.querySelector('span')?.innerText === 'Save')
-        ?.querySelector('button');
+      // const saveButton = [...document.querySelectorAll('.vertical-control .control-item')]
+      //   .find(el => el.querySelector('span')?.innerText === 'Save')
+      //   ?.querySelector('button');
 
-      if (saveButton) {
-        saveButton.disabled = true;
-        saveButton.style.opacity = 0.5;
-        saveButton.style.pointerEvents = 'none';
-      }
+      // if (saveButton) {
+      //   saveButton.disabled = true;
+      //   saveButton.style.opacity = 0.5;
+      //   saveButton.style.pointerEvents = 'none';
+      // }
 
-      const map_features = [];
+      const marker = [];
+      const rectangle = [];
 
       drawnItems.eachLayer(layer => {
         let name = '';
@@ -547,31 +570,23 @@
         let description = '';
         let coordinates = null;
 
+        const popupContent = layer.getPopup() ? layer.getPopup().getContent() : '';
+        const nameMatch = popupContent.match(/([A-Z ]+)(\d+)/);
+        if (nameMatch) {
+          name = nameMatch[1].trim();
+          id = parseInt(nameMatch[2]);
+        }
+
+        const descMatch = popupContent.match(/:\s*(.*)<br>/);
+        description = descMatch ? descMatch[1].trim() : '';
+
         if (layer instanceof L.Marker) {
-          const popupContent = layer.getPopup() ? layer.getPopup().getContent() : '';
-          const nameMatch = popupContent.match(/([A-Z ]+)(\d+)/);
-          if (nameMatch) {
-            name = nameMatch[1].trim();
-            id = parseInt(nameMatch[2]);
-          }
-
-          const descMatch = popupContent.match(/:\s*(.*)<br>/);
-          description = descMatch ? descMatch[1].trim() : '';
-
           const latlng = layer.getLatLng();
           coordinates = { lat: latlng.lat, lng: latlng.lng };
 
+          marker.push({ name, id, description, coordinates });
+
         } else if (layer instanceof L.Rectangle) {
-          const popupContent = layer.getPopup() ? layer.getPopup().getContent() : '';
-          const nameMatch = popupContent.match(/([A-Z ]+)(\d+)/);
-          if (nameMatch) {
-            name = nameMatch[1].trim();
-            id = parseInt(nameMatch[2]);
-          }
-
-          const descMatch = popupContent.match(/^[^:<]+:\s*(.*?)<br>/);
-          description = descMatch ? descMatch[1].trim() : '';
-
           const bounds = layer.getBounds();
           const sw = bounds.getSouthWest();
           const ne = bounds.getNorthEast();
@@ -580,35 +595,72 @@
             sw: { lat: sw.lat, lng: sw.lng },
             ne: { lat: ne.lat, lng: ne.lng }
           };
-        }
 
-        map_features.push({ name, id, description, coordinates });
+          rectangle.push({ name, id, description, coordinates });
+        }
       });
 
-      const data = { map_features };
+      return {rectangle, marker}
 
-      fetch('http://localhost:8000/map_features', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-        .then(res => res.json())
-        .then(response => {
-          console.log(`Server Response: ${response.status}, map_features received: ${response.received_count}`);
-        })
-        .catch(err => {
-          alert('Error sending map map_features: ' + err);
-        })
-        .finally(() => {
-          if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.style.opacity = 1;
-            saveButton.style.pointerEvents = 'auto';
-          }
-        });
+      // data = { rectangle, marker };
+
+      // fetch('http://localhost:8000/map_features', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify(data)
+      // })
+      //   .then(res => res.json())
+      //   .then(response => {
+      //     console.log(`Server Response: ${response.status}, map_features received: ${response.received_count}`);
+      //   })
+      //   .catch(err => {
+      //     alert('Error sending map features: ' + err);
+      //   })
+      //   .finally(() => {
+      //     if (saveButton) {
+      //       saveButton.disabled = false;
+      //       saveButton.style.opacity = 1;
+      //       saveButton.style.pointerEvents = 'auto';
+      //     }
+      //   });
     }
+    //////////////////////////////////////////////////////////////
+    function drawWaypointPath(coordsArray) {
+      if (!Array.isArray(coordsArray) || coordsArray.length < 2) {
+        console.error("Need at least two coordinates to draw a waypoint path.");
+        return;
+      }
+
+      const latlngs = coordsArray.map(coord => {
+        if (Array.isArray(coord) && coord.length === 2) {
+          return L.latLng(coord[0], coord[1]);
+        } else if (coord.lat !== undefined && coord.lng !== undefined) {
+          return L.latLng(coord.lat, coord.lng);
+        } else {
+          console.error("Invalid coordinate format:", coord);
+          return null;
+        }
+      }).filter(Boolean);
+
+      const polyline = L.polyline(latlngs, {
+        color: '#353535',
+        weight: 4,
+        opacity: 0.8,
+        lineJoin: 'round',
+        dashArray: '6, 4'
+      });
+
+      polyline.addTo(drawnItems);
+
+      // Optionally zoom to fit the route
+      map.fitBounds(polyline.getBounds());
+
+      // Optional: Add popup with summary
+      polyline.bindPopup(`<b>WAYPOINT ROUTE</b><br>Points: ${latlngs.length}`).openPopup();
+    }
+    //////////////////////////////////////////////////////////////////////////
 
   </script>
 </body>

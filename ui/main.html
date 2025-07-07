@@ -1,27 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FireGPT - AI Chat Interface</title>
   <style>
+    :root {
+      --bg-dark: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --bg-tertiary: #404040;
+      --border-color: #404040;
+      --accent: #6b9eff;
+      --accent-hover: #5a8bef;
+      --text-light: #ffffff;
+      --text-muted: #909090;
+    }
+
+    html[data-theme="light"] {
+      --bg-dark: #ffffff;
+      --bg-secondary: #f5f5f5;
+      --bg-tertiary: #e0e0e0;
+      --border-color: #cccccc;
+      --accent: #6b9eff;
+      --accent-hover: #5a8bef;
+      --text-light: #000000;
+      --text-muted: #606060;
+    }
+
+    :root {
+      --padding-base: 16px;
+      --radius: 8px;
+      --transition: 0.3s;
+      color-scheme: light dark;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
+    html,
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a1a;
-      color: #ffffff;
-      height: 100vh;
+      height: 100%;
+      width: 100%;
       overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .container {
       display: flex;
-      height: 100vh;
+      height: 100%;
     }
 
     .header {
@@ -30,112 +62,153 @@
       left: 0;
       right: 0;
       height: 60px;
-      background: #2d2d2d;
-      border-bottom: 1px solid #404040;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
-      padding: 0 20px;
+      justify-content: space-between;
+      padding: 0 var(--padding-base);
       z-index: 1000;
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #ff6b35, #ff8e3c);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: white;
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
     }
 
-    .logo-text {
-      font-size: 20px;
-      font-weight: 600;
+    .theme-toggle img {
+      width: 24px;
+      height: 24px;
     }
 
-    .sidebar {
-      width: 220px;
-      background: #2d2d2d;
-      border-right: 1px solid #404040;
+    html[data-theme="dark"] .theme-toggle img {
+      filter: none;
+    }
+
+    html[data-theme="light"] .theme-toggle img {
+      filter: invert(100%);
+    }
+
+    .sidebar,
+    .right-sidebar {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
       padding-top: 60px;
       display: flex;
       flex-direction: column;
+      width: 220px;
+    }
+
+    .sidebar {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex: 0 0 auto;
+      width: 350px;
+      min-width: 300px;
+    }
+
+    .right-sidebar {
+      flex: 0.7 1 220px;
     }
 
     .sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid #404040;
+      padding: var(--padding-base);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .sidebar-title {
       font-size: 16px;
       font-weight: 600;
-      margin-bottom: 15px;
+      margin-bottom: var(--padding-base);
     }
 
     .add-btn {
-      background: #404040;
+      background: var(--bg-tertiary);
       border: none;
-      color: #ffffff;
-      padding: 10px 15px;
-      border-radius: 6px;
+      color: var(--text-light);
+      padding: 8px;
+      border-radius: var(--radius);
       cursor: pointer;
       font-size: 14px;
       width: 100%;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
-      transition: background 0.2s;
+      transition: filter var(--transition);
     }
 
-    .add-btn:hover {
-      background: #505050;
+    .add-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .add-btn img {
+      width: 24px;
+      height: 24px;
+    }
+
+    html[data-theme="dark"] .add-btn img {
+      filter: none;
+    }
+
+    html[data-theme="light"] .add-btn img {
+      filter: invert(100%);
+    }
+
+    .add-btn span {
+      display: inline-block;
+    }
+
+    .add-btn:hover:not(:disabled) {
+      filter: brightness(1.1);
     }
 
     .sources-section {
-      padding: 20px;
       flex: 1;
       overflow-y: auto;
-      overflow-x: hidden;
+      padding: var(--padding-base);
     }
 
     .source-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
       padding: 8px 0;
-      color: #e0e0e0;
       font-size: 14px;
-      word-break: break-word;
-      white-space: normal;
-      flex-wrap: wrap;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+
+    .source-item button:hover {
+      color: #d32f2f;
     }
 
     .main-content {
-      flex: 0.7;
       display: flex;
-      flex-direction: column;
+      flex: 1.3 1 0;
+      height: 100%;
       padding-top: 60px;
     }
 
     .chat-container {
-      flex: 1;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      width: 100%;
     }
 
     .chat-header {
-      padding: 20px;
-      border-bottom: 1px solid #404040;
+      padding: var(--padding-base);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .chat-title {
@@ -145,272 +218,539 @@
 
     .messages-area {
       flex: 1;
-      padding: 20px;
+      padding: var(--padding-base);
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 12px;
     }
 
     .message {
       max-width: 80%;
-      padding: 15px 20px;
+      padding: 12px var(--padding-base);
       border-radius: 12px;
       font-size: 14px;
       line-height: 1.5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      word-break: break-word;
     }
 
     .message.user {
-      background: #6b9eff;
-      color: white;
+      background: #353535;
+      color: #ffffff;
       align-self: flex-end;
     }
 
     .message.assistant {
-      background: #404040;
+      background: #353535;
       color: #ffffff;
       align-self: flex-start;
     }
 
+    .message img {
+      max-width: 200px;
+      border-radius: 6px;
+      margin-top: 8px;
+    }
+
     .input-area {
-      padding: 20px;
-      border-top: 1px solid #404040;
-      background: #2d2d2d;
-    }
-
-    .input-container {
+      position: sticky;
+      bottom: 0;
+      background: var(--bg-secondary);
+      padding: var(--padding-base);
+      border-top: 1px solid var(--border-color);
       display: flex;
-      gap: 10px;
-      align-items: flex-end;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 500;
     }
 
-    .input-wrapper {
-      flex: 1;
-      position: relative;
+    .preview-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: calc(50px * 2 + 8px);
+      overflow-y: auto;
+    }
+
+    .preview-area img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: var(--radius);
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .chat-input {
-      width: 100%;
-      background: #404040;
-      border: 1px solid #606060;
-      border-radius: 12px;
-      padding: 12px 50px 12px 16px;
-      color: #ffffff;
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 8px;
+      line-height: 1.8;
+      min-height: calc(1.8em + 18px);
+      max-height: 160px;
+      overflow-y: auto;
+      color: var(--text-light);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
       resize: none;
-      min-height: 44px;
-      max-height: 120px;
-      font-family: inherit;
+      transition: border-color var(--transition);
+      direction: rtl;
+      unicode-bidi: plaintext;
+      text-align: left;
+    }
+
+    .chat-input::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-input::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat-input::-webkit-scrollbar-thumb {
+      background-color: var(--text-muted);
+      border-radius: 3px;
+    }
+
+    .chat-input {
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-muted) transparent;
     }
 
     .chat-input:focus {
       outline: none;
-      border-color: #6b9eff;
+      border-color: var(--accent);
     }
 
     .chat-input::placeholder {
-      color: #909090;
+      color: var(--text-muted);
     }
 
+    .file-btn,
     .send-btn {
-      position: absolute;
-      right: 10px;
-      bottom: 10px;
-      background: #6b9eff;
+      background: var(--bg-tertiary);
       border: none;
-      color: white;
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
+      color: var(--text-light);
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: filter var(--transition);
+      padding: 0;
     }
 
-    .send-btn:hover {
-      background: #5a8bef;
+    .file-btn img,
+    .send-btn img {
+      width: 24px;
+      height: 24px;
+    }
+
+    html[data-theme="dark"] .file-btn img,
+    html[data-theme="dark"] .send-btn img {
+      filter: none;
+    }
+
+    html[data-theme="light"] .file-btn img,
+    html[data-theme="light"] .send-btn img {
+      filter: invert(100%);
+    }
+
+    .file-btn:hover,
+    .send-btn:hover:not(:disabled) {
+      filter: brightness(1.2);
     }
 
     .send-btn:disabled {
-      background: #505050;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
-    .right-sidebar {
-      flex: 1.3;
-      background: #2d2d2d;
-      border-left: 1px solid #404040;
-      padding-top: 60px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Removed the right-sidebar-header and title styles since the title is removed */
-
     .map-container {
       flex: 1;
-      height: 100%;
-      border-radius: 0;
-      overflow: hidden;
+      padding: var(--padding-base);
     }
 
     .map-frame {
       width: 100%;
       height: 100%;
       border: none;
+      border-radius: var(--radius);
     }
 
     @media (max-width: 768px) {
-      .sidebar, .right-sidebar {
-        width: 250px;
-      }
 
+      .sidebar,
       .right-sidebar {
-        width: 300px;
+        width: 250px;
       }
     }
 
     @media (max-width: 640px) {
-      .sidebar, .right-sidebar {
+
+      .sidebar,
+      .right-sidebar {
         position: fixed;
         top: 60px;
-        left: -100%;
-        height: calc(100vh - 60px);
-        z-index: 999;
-        transition: left 0.3s;
+        height: calc(100% - 60px);
+        transition: transform var(--transition);
       }
 
-      .right-sidebar {
-        left: 100%;
-        width: 90%;
+      .sidebar {
+        transform: translateX(-100%);
       }
 
       .sidebar.open {
-        left: 0;
+        transform: translateX(0);
+      }
+
+      .right-sidebar {
+        transform: translateX(100%);
+        width: 90%;
       }
 
       .right-sidebar.open {
-        left: 10%;
+        transform: translateX(-10%);
       }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <div class="header">
+    <header class="header">
       <div class="logo">
         <div class="logo-icon">🔥</div>
         <div class="logo-text">FireGPT</div>
       </div>
-    </div>
-
-    <div class="sidebar">
+      <button class="theme-toggle" onclick="toggleTheme()"><img src="./icons/darklight.png"
+          alt="Toggle Theme" /></button>
+    </header>
+    <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="sidebar-title">Sources</div>
-        <button class="add-btn" onclick="document.getElementById('fileInput').click()">
-          <span>+</span>
-          <span>Add</span>
-        </button>
-        <input id="fileInput" type="file" multiple style="display: none;" />
-      </div>
-      <div class="sources-section" id="sourcesList">
-        <!-- Files will be listed here -->
-      </div>
-    </div>
-
-    <div class="main-content">
-      <div class="chat-container">
-        <div class="chat-header">
-          <div class="chat-title">Chat</div>
+        <h2 class="sidebar-title">Sources</h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="add-btn" id="addDocumentsBtn" onclick="fileInput.click()">
+            <img src="./icons/adddocuments.png" alt="Add Documents" />
+            <span>Add Documents</span>
+          </button>
+          <button class="add-btn" id="removeAllDocumentsBtn" onclick="removeAllDocuments()" style="background: #d32f2f;"
+            title="Remove All">
+            <img src="./icons/delete.png" alt="Remove All" /><span>Remove All</span>
+          </button>
         </div>
-        <div class="messages-area">
-          <div class="message assistant">
-            Welcome to FireGPT! I'm here to help you with your questions and tasks. You can upload documents, ask questions, and get comprehensive answers based on your sources.
-          </div>
+        <input id="fileInput" type="file" accept="application/pdf" multiple hidden />
+      </div>
+      <div class="sources-section" id="sourcesList"></div>
+    </aside>
+    <main class="main-content">
+      <section class="chat-container">
+        <div class="chat-header">
+          <h1 class="chat-title">Chat</h1>
+        </div>
+        <div class="messages-area" id="messagesArea">
+          <div class="message assistant">Welcome to FireGPT! I'm here to help you with your questions and tasks.</div>
         </div>
         <div class="input-area">
-          <div class="input-container">
-            <div class="input-wrapper">
-              <textarea class="chat-input" placeholder="Start typing..." rows="1"></textarea>
-              <button class="send-btn" disabled><span>→</span></button>
-            </div>
+          <div class="preview-area" id="previewArea"></div>
+          <div class="input-row">
+            <textarea class="chat-input" placeholder="Ask anything" rows="1"></textarea>
+            <button class="file-btn" onclick="imageInput.click()"><img src="./icons/addimage.png"
+                alt="Add Image" /></button>
+            <button class="send-btn" disabled><img src="./icons/send.png" alt="Send" /></button>
+            <input id="imageInput" type="file" accept="image/*" multiple hidden />
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="right-sidebar">
-      <!-- Removed the right-sidebar-header and title to remove the map title -->
-      <div class="map-container">
-        <iframe src="map.html" class="map-frame" title="Emergency Response Map"></iframe>
-      </div>
-    </div>
+      </section>
+    </main>
+    <aside class="right-sidebar">
+      <div class="map-container"><iframe id="mapIframe" src="map.html" class="map-frame"
+          title="Emergency Response Map"></iframe></div>
+    </aside>
   </div>
-
   <script>
-    const chatInput = document.querySelector('.chat-input');
-    const sendBtn = document.querySelector('.send-btn');
-    const messagesArea = document.querySelector('.messages-area');
+
+
+    /////// Backend URL /////////
+    const backend_url = "http://127.0.0.1:8000"
+
+    // Get map function here /////////////
+    const iframe = document.getElementById('mapIframe');
+
+    iframe.onload = () => {
+      if (iframe.contentWindow && typeof iframe.contentWindow.extract_map_features_post === 'function') {
+        iframe.contentWindow.extract_map_features_post();
+      } else {
+        console.error('extract_map_features_post not found in iframe');
+      }
+    };
+
+    /////////////////////////////////
+    // Theme toggle logic
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    }
+    // Initialize theme from storage
+    (function () {
+      const saved = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+
     const fileInput = document.getElementById('fileInput');
     const sourcesList = document.getElementById('sourcesList');
-
+    const imageInput = document.getElementById('imageInput');
+    const previewArea = document.getElementById('previewArea');
+    const chatInput = document.querySelector('.chat-input');
+    const sendBtn = document.querySelector('.send-btn');
+    const addDocumentsBtn = document.getElementById('addDocumentsBtn');
+    const messagesArea = document.getElementById('messagesArea');
     let uploadedFiles = [];
 
-    chatInput.addEventListener('input', function () {
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-      sendBtn.disabled = this.value.trim() === '';
+    // --- Block double send (send button logic) ---
+    let isWaitingForResponse = false;
+    // --- Block double upload (Add Documents button logic) ---
+    let isUploadingDocuments = false;
+
+    // Auto-resize textarea up to 5 lines (~130px)
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      const maxHeight = 160; // ~5 lines
+      chatInput.style.height = Math.min(chatInput.scrollHeight, maxHeight) + 'px';
+      // enable send only if not waiting for response
+      if (!isWaitingForResponse) {
+        sendBtn.disabled = !chatInput.value.trim() && !imageInput.files.length;
+      }
     });
 
-    function sendMessage() {
-      const message = chatInput.value.trim();
-      if (message) {
-        const userMessage = document.createElement('div');
-        userMessage.className = 'message user';
-        userMessage.textContent = message;
-        messagesArea.appendChild(userMessage);
-
-        chatInput.value = '';
-        chatInput.style.height = 'auto';
-        sendBtn.disabled = true;
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-
-
-        extract_map_features_post();
-
-        setTimeout(() => {
-          const aiMessage = document.createElement('div');
-          aiMessage.className = 'message assistant';
-          aiMessage.textContent = `I understand your question about "${message}". Let me help you with that based on the available sources.`;
-          messagesArea.appendChild(aiMessage);
-          messagesArea.scrollTop = messagesArea.scrollHeight;
-        }, 1000);
+    imageInput.addEventListener('change', () => {
+      previewArea.innerHTML = '';
+      Array.from(imageInput.files).forEach(file => {
+        const url = URL.createObjectURL(file);
+        const img = document.createElement('img');
+        img.src = url;
+        previewArea.appendChild(img);
+      });
+      if (!isWaitingForResponse) {
+        sendBtn.disabled = false;
       }
+    });
+
+    async function sendMessage() {
+      // Prevent duplicate sends
+      if (isWaitingForResponse) return;
+      isWaitingForResponse = true;
+      sendBtn.disabled = true;
+
+      const text = chatInput.value.trim();
+      const images = Array.from(imageInput.files);
+
+      // Show user message in UI
+      if (text) appendMessage(text, 'user');
+      for (const img of images) {
+        const reader = new FileReader();
+        reader.onload = e => appendImage(e.target.result, 'user');
+        reader.readAsDataURL(img);
+      }
+
+      // Get Map features
+      const map_features = JSON.stringify(iframe.contentWindow.extract_map_features_post());
+      // extract_map_features_post();
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("message", text);
+      images.forEach((file, index) => {
+        formData.append("images", file); // FastAPI will receive as a list
+      });
+      formData.append("map_features", map_features);
+
+      try {
+        const response = await fetch(backend_url + "/send-chat", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+        if (response.ok) {
+          if (result.reply) appendMessage(result.reply, 'assistant');
+          // Draw the pathList if any 
+          if (result.pathList) {
+            result.pathList.forEach(coords => {
+              iframe.contentWindow.drawWaypointPath(coords);
+            });
+          }
+        } else {
+          appendMessage("Error: " + result.detail, 'assistant');
+        }
+      } catch (err) {
+        console.error("Send failed:", err);
+        appendMessage("Network error", 'assistant');
+      }
+
+      // Reset input UI
+      chatInput.value = '';
+      imageInput.value = '';
+      previewArea.innerHTML = '';
+      chatInput.style.height = 'auto';
+
+      // Done waiting, re-enable sendBtn only if there is text or images
+      isWaitingForResponse = false;
+      sendBtn.disabled = !(chatInput.value.trim() || imageInput.files.length);
     }
 
     sendBtn.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
+
+    chatInput.addEventListener('keydown', e => {
+      // Allow send only if not waiting for response
+      if (e.key === 'Enter' && !e.shiftKey && !isWaitingForResponse && !sendBtn.disabled) {
         e.preventDefault();
         sendMessage();
       }
     });
 
-    fileInput.addEventListener('change', function () {
-      for (const file of this.files) {
-        if (!uploadedFiles.includes(file.name)) {
-          uploadedFiles.push(file.name);
+    function appendMessage(text, role) {
+      const msg = document.createElement('div'); msg.className = `message ${role}`; msg.textContent = text;
+      messagesArea.appendChild(msg); messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+    function appendImage(src, role) {
+      const msg = document.createElement('div'); msg.className = `message ${role}`;
+      const img = document.createElement('img'); img.src = src; msg.appendChild(img);
+      messagesArea.appendChild(msg); messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
 
-          const div = document.createElement('div');
-          div.className = 'source-item';
-          div.innerHTML = `<span style="max-width: 160px; display: inline-block;">${file.name}</span>`;
-          sourcesList.appendChild(div);
+    async function removeAllDocuments() {
+      removeAllDocumentsBtn.disabled = true;
+      try {
+        const response = await fetch(backend_url + "/delete-all", {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          uploadedFiles = [];
+          sourcesList.innerHTML = '';
+        } else {
+          alert('Failed to delete all documents');
+        }
+      } catch (err) {
+        console.error('Error deleting all documents:', err);
+        alert('Network error while deleting documents');
+      }
+      removeAllDocumentsBtn.disabled = false;
+    }
+
+    // Add Documents button disables during upload
+    fileInput.addEventListener('change', async function () {
+      if (isUploadingDocuments) return;
+      isUploadingDocuments = true;
+      addDocumentsBtn.disabled = true;
+
+      const files = Array.from(this.files);
+      for (const file of files) {
+        if (!uploadedFiles.includes(file.name)) {
+          const formData = new FormData();
+          formData.append('file', file);
+          try {
+            const response = await fetch(backend_url + "/upload", {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (response.ok) {
+              uploadedFiles.push(file.name);
+              addSourceItem(file.name);
+            } else {
+              alert('Upload failed: ' + (await response.text()));
+            }
+          } catch (err) {
+            console.error('Error uploading file:', err);
+            alert('Upload failed: Network error');
+          }
         }
       }
       fileInput.value = '';
+      isUploadingDocuments = false;
+      addDocumentsBtn.disabled = false;
     });
+
+    // Load uploaded files from backend on page load
+    async function loadUploadedFiles() {
+      try {
+        const response = await fetch(backend_url + "/list-files");
+        if (response.ok) {
+          const files = await response.json();
+          uploadedFiles = files;
+          files.forEach(filename => addSourceItem(filename));
+        } else {
+          console.error("Failed to fetch file list.");
+        }
+      } catch (err) {
+        console.error("Error fetching uploaded files:", err);
+      }
+    }
+
+
+    function addSourceItem(filename) {
+      const div = document.createElement('div');
+      div.className = 'source-item';
+      div.textContent = filename;
+
+      // Apply styles
+      div.style.border = '1px solid #353535';
+      div.style.borderRadius = '8px';
+      div.style.padding = '8px 12px';
+      div.style.marginBottom = '10px';
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
+      div.style.justifyContent = 'space-between';
+      div.style.backgroundColor = '#353535'; // Gray background
+      div.style.color = '#ffffff'; // White font color
+
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = '✕';
+      removeBtn.style.marginLeft = '10px';
+      removeBtn.style.background = 'none';
+      removeBtn.style.border = 'none';
+      removeBtn.style.color = '#d32f2f'; // Match text color
+      removeBtn.style.cursor = 'pointer';
+      removeBtn.style.fontSize = '16px';
+
+      removeBtn.onclick = async function () {
+        removeBtn.disabled = true;
+        try {
+          const response = await fetch(`${backend_url}/delete/${encodeURIComponent(filename)}`, {
+            method: 'DELETE'
+          });
+          if (response.ok) {
+            uploadedFiles = uploadedFiles.filter(f => f !== filename);
+            div.remove();
+          } else {
+            removeBtn.disabled = false;
+            alert(`Failed to delete file: ${filename}`);
+          }
+        } catch (err) {
+          console.error('Error deleting file:', err);
+          alert('Network error while deleting file');
+        }
+      };
+
+      div.appendChild(removeBtn);
+      sourcesList.appendChild(div);
+    }
+
+
+    window.addEventListener("DOMContentLoaded", loadUploadedFiles);
   </script>
 </body>
+
 </html>

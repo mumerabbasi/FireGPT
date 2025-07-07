@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import os
 import uuid
 from typing import List, Optional
+import json
 
 app = FastAPI()
 
@@ -57,21 +58,23 @@ async def delete_all_files():
     return {"status": "all_deleted", "files": deleted}
 
 
-@app.post("/map_features")
-async def receive_map_features(request: Request):
-    data = await request.json()  # receive any JSON
-    print("Received JSON data:")
-    print(data)
-    return data  # echo back exactly what was received
+# @app.post("/map_features")
+# async def receive_map_features(request: Request):
+#     data = await request.json()  # receive any JSON
+#     print("Received JSON data:")
+#     print(data)
+#     return data  # echo back exactly what was received
 
 
 @app.post("/send-chat")
 async def send_chat(
     message: str = Form(...),
+    map_features: str = Form(...),
     images: Optional[List[UploadFile]] = File(None)
-):    
-    saved_image_urls = []
+):
     print(f"Message: {message}")
+    
+    # Process uploaded images
     if images:
         for image in images:
             extension = os.path.splitext(image.filename)[1]
@@ -79,15 +82,28 @@ async def send_chat(
             file_path = os.path.join(CHAT_IMAGE_DIR, unique_name)
             with open(file_path, "wb") as f:
                 f.write(await image.read())
+            print(f"Saved image: {file_path}")
     else:
         print("No images uploaded.")
+    
+    # Parse map_features (sent as JSON string)
+    try:
+        map_features_data = json.loads(map_features)
+        print("Parsed map features:", map_features_data)
+    except json.JSONDecodeError:
+        map_features_data = None
+        print("Invalid map features JSON.")
 
-
-    # Simulated response (replace with AI logic)
+    # Simulated AI logic and optional path response
     reply = f"I received your message: '{message}'"
-    return {
-        "reply": reply
-    }
+    pathList = [
+    [
+        {"lat": 40.7128, "lng": -74.0060},
+        {"lat": 40.7308, "lng": -73.9975}
+    ]
+    ] if map_features_data else []
 
-    # Mock assistant reply
-    return {"response": "Thanks! I received your message."}
+    return {
+        "reply": reply,
+        "pathList": pathList
+    }
