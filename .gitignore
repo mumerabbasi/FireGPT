@@ -71,3 +71,15 @@ data/
 # ──────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+
+ui/assets
+ui/assets/
+Niku.zip
+src
+temp
+ui/static
+firegpt-testnextjs
+nextjs-ollama-llm-ui
+streamlit test
+Vue
