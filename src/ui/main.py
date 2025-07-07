@@ -6,6 +6,11 @@ import os
 import uuid
 from typing import List, Optional
 
+import os
+from os.path import dirname, realpath, sep, pardir
+import sys
+sys.path.append("../agent")
+import agent_react
 app = FastAPI()
 
 # Allow frontend requests
@@ -22,15 +27,17 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 CHAT_IMAGE_DIR = "chat_images"
 os.makedirs(CHAT_IMAGE_DIR, exist_ok=True)
 
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
-    
+
     with open(file_path, "wb") as f:
         content = await file.read()
         f.write(content)
 
     return {"filename": file.filename, "status": "uploaded"}
+
 
 @app.get("/list-files")
 async def list_files():
@@ -39,6 +46,7 @@ async def list_files():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Could not list files")
 
+
 @app.delete("/delete/{filename}")
 async def delete_file(filename: str):
     file_path = os.path.join(UPLOAD_DIR, filename)
@@ -46,6 +54,7 @@ async def delete_file(filename: str):
         os.remove(file_path)
         return {"status": "deleted", "filename": filename}
     raise HTTPException(status_code=404, detail="File not found")
+
 
 @app.delete("/delete-all")
 async def delete_all_files():
@@ -84,7 +93,8 @@ async def send_chat(
 
 
     # Simulated response (replace with AI logic)
-    reply = f"I received your message: '{message}'"
+    reply = await agent_react.run_chat(message)
+    # reply = f"I received your message: '{reply}'"
     return {
         "reply": reply
     }
