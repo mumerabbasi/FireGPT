@@ -32,8 +32,8 @@ client = FireGEE(base_url="https://api.firefirefire.lol")
 def assess_fire_danger(
     top_left_lat: float = 47.6969,
     top_left_lon: float = 7.9468,
-    bottom_right_lat: float = 47.7524,
-    bottom_right_lon: float = 8.0347,
+    bottom_right_lat: float = 47.7024,
+    bottom_right_lon: float = 7.9901,
 ) -> FireDangerResponse | None:
     """
     Assess fire danger at a given bounding box using the FireGEE API. Required parameters:
@@ -49,9 +49,9 @@ def assess_fire_danger(
 
     Returns a json.
     """
-    subgrid_size_m: int = 100
-    forecast_hours: int = 3
-    poi_search_buffer_m: int = 0
+    subgrid_size_m: int = 500
+    forecast_hours: int = 1
+    poi_search_buffer_m: int = 1000
     bbox = BoundingBox(
         top_left_lat=top_left_lat,
         top_left_lon=top_left_lon,

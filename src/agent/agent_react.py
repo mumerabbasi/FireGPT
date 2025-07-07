@@ -26,6 +26,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 __all__ = ["run_cli"]
 
@@ -48,12 +49,12 @@ OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen3:8b")
 # -----------------------------------------------------------
 
 HARDCODED_POIS: List[dict[str, Any]] = [
-    {"lat": 47.70, "lon": 8.00, "note": "Critical power sub-station - protect"},
-    {"lat": 47.73, "lon": 8.05, "note": "Regional hospital - protect"},
+    {"lat": 47.70, "lon": 7.95, "note": "Critical power sub-station - protect"},
+    {"lat": 47.71, "lon": 7.99, "note": "Regional hospital - protect"},
 ]
 HARDCODED_BBOX: Tuple[Tuple[float, float], Tuple[float, float]] = (
     (47.6969, 7.9468),  # top-left  (lat, lon)
-    (47.7524, 8.0347),  # bottom-right
+    (47.7024, 7.9901),  # bottom-right
 )
 
 # -----------------------------------------------------------
@@ -93,42 +94,17 @@ BASE_RULES = (
     * `retrieve_chunks_local(query)` — jurisdiction-specific SOPs (**use first**).
     * `retrieve_chunks_global(query)` — global best-practice docs (fallback).
 
-    ### Understanding `assess_fire_danger` output
-    * The response contains `subgrids` keyed like `subgrid_203`; each holds:
-    * `center_lat`, `center_lon` — centre of the 100 m cell.
-    * `fire_danger.score` — 0-100 risk index.
-    * `properties.u_wind_ms`, `properties.v_wind_ms` — wind vector components
-        (positive **u** → east-ward, positive **v** → north-ward).
-    * **Score tiers**
-    * ≥ 70 → **Extreme** (likely crown fire)
-    * 40-69 → **High**
-    * < 40 → **Moderate / Low**
-    * **Wind-driven spread** - fire tends to move *down-wind* (same direction the
-    wind blows). Combine wind direction with high/extreme cells to anticipate
-    spread corridors.
-    * **Prioritisation algorithm (guideline):**
-    1. Compute the average wind vector of all cells with score ≥ 40.
-    2. Mark POIs that lie within **1 km down-wind** of a high/extreme cell as
-        `protect_immediately`.
-    3. Suggest defensive actions on the **up-wind** edge of extreme cells to slow
-        advance.
-    4. Recommend surveillance drones to patrol the projected spread axis.
-    * If `subgrids` is empty, explain that the tool returned no data.
-
     ### When the user supplies a bounding box (`bbox`)
-    1. Call `assess_fire_danger` **exactly once** *before* composing your final
-    answer.
+    1. Call `assess_fire_danger` **exactly once**. Call `assess_fire_danger` **exactly once**.
     2. **Drone way-points requested?**
     * Return **only** a JSON array with **6-12** `[lat, lon]` pairs (no keys,
         comments, or prose).
-    * Each point must lie either in a cell where `fire_danger.score` ≤ 30 **or**
-        within **150 m** of a POI.
+    * Waypoints must be safe for drone to operate in.
     3. **SOPs/guidance requested?**
     * Query `retrieve_chunks_local` first.
     * Use `retrieve_chunks_global` only if relevant local guidance is missing.
 
     ### Additional rules
-    * Do **not** output coordinates unless explicitly asked.
     * Distinguish between **action** (way-points) and **information** (SOPs, status)
     requests and answer accordingly.
     """
@@ -164,8 +140,9 @@ def load_tools() -> list:  # -> list[BaseTool]
 async def build_react_agent(tools: list):
     llm = ChatOpenAI(
         model_name=OPENAI_MODEL,
-        temperature=0,
+        # temperature=0,
         streaming=True,
+        callbacks=[StreamingStdOutCallbackHandler()],
         openai_api_base=OPENAI_BASE,
         openai_api_key="unused",
         model_kwargs={"tool_choice": "any"},
@@ -175,6 +152,7 @@ async def build_react_agent(tools: list):
         model=llm,
         tools=tools,
         state_schema=AgentState,
+        prompt=BASE_RULES
     )
     return agent, llm
 
@@ -209,16 +187,14 @@ async def run_turn(
     graph: StateGraph,
     user_prompt: str,
     ctx: IncidentContext,
-    first_turn: bool,
     thread_id: str,
 ) -> tuple[str, IncidentContext]:
     """Execute one conversational turn and return (assistant_reply, ctx)."""
 
     messages: List[BaseMessage] = []
 
-    # 1. System prompt only on the first turn
-    if first_turn:
-        messages.append(SystemMessage(content=BASE_RULES))
+    # 1. System prompt
+    messages.append(SystemMessage(content=BASE_RULES))
 
     # 2. Context message if we have geometry
     if not ctx.is_empty:
@@ -238,9 +214,9 @@ async def run_turn(
             "configurable": {"thread_id": thread_id},
         },
     )
-    print("STATE----------------------")
+    '''print("STATE----------------------")
     print(out)
-    print("STATE----------------------")
+    print("STATE----------------------")'''
     reply = last_ai_message(out["messages"]).content
     return reply
 
@@ -256,7 +232,6 @@ async def run_cli() -> None:  # pragma: no cover – interactive
 
     # Initial geometry
     current_ctx = IncidentContext(bbox=HARDCODED_BBOX, pois=HARDCODED_POIS)
-    first_turn = True
 
     print("\nFireGPT - async CLI (type 'exit' to quit)\n")
 
@@ -277,14 +252,12 @@ async def run_cli() -> None:  # pragma: no cover – interactive
                 graph,
                 user_prompt,
                 current_ctx,
-                first_turn,
                 thread_id,
             )
         except Exception as exc:
             print(f"\nAgent error: {exc}\n", file=sys.stderr)
             continue
 
-        first_turn = False
         print("\nAssistant:\n" + reply + "\n")
 
 # -----------------------------------------------------------

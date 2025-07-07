@@ -194,8 +194,8 @@ def retrieve_chunks_global(
 def assess_fire_danger(
     top_left_lat: float = 47.6969,
     top_left_lon: float = 7.9468,
-    bottom_right_lat: float = 47.7524,
-    bottom_right_lon: float = 8.0347,
+    bottom_right_lat: float = 47.7024,
+    bottom_right_lon: float = 7.9901,
 ) -> FireDangerResponse | None:
     """
     Assess fire danger at a given bounding box using the FireGEE API. Required parameters:
@@ -211,8 +211,8 @@ def assess_fire_danger(
 
     Returns a json.
     """
-    subgrid_size_m: int = 15
-    forecast_hours: int = 3
+    subgrid_size_m: int = 250
+    forecast_hours: int = 1
     poi_search_buffer_m: int = 1000
     bbox = BoundingBox(
         top_left_lat=top_left_lat,
@@ -227,12 +227,9 @@ def assess_fire_danger(
         poi_search_buffer_m=poi_search_buffer_m,
     )
 
-    print(payload)
-
     response: Response[FireDangerResponse] = assess_fire_danger_assess_fire_danger_post.sync_detailed(
         client=client, body=payload
     )
-    print(response)
     if response.status_code == 200:
         body = json.loads(response.content)
         return FireDangerResponse(**body)
