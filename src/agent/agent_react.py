@@ -265,5 +265,21 @@ async def run_cli() -> None:  # pragma: no cover – interactive
 # -----------------------------------------------------------
 
 
+async def run_chat(user_prompt):
+    graph = await compile_graph()
+    thread_id = f"fire-session-{uuid.uuid4()}"
+
+    # Initial geometry
+    current_ctx = IncidentContext(bbox=HARDCODED_BBOX, pois=HARDCODED_POIS)
+
+    print("\nFireGPT - async CLI (type 'exit' to quit)\n")
+    reply = await run_turn(
+    graph,
+    user_prompt,
+    current_ctx,
+    thread_id,
+    )
+    return reply
+
 if __name__ == "__main__":  # pragma: no cover - script mode
     asyncio.run(run_cli())

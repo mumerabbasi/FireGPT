@@ -6,6 +6,11 @@ import os
 import uuid
 from typing import List, Optional
 
+import os
+from os.path import dirname, realpath, sep, pardir
+import sys
+sys.path.append("../agent")
+import agent_react
 app = FastAPI()
 
 # Allow frontend requests
@@ -84,7 +89,8 @@ async def send_chat(
 
 
     # Simulated response (replace with AI logic)
-    reply = f"I received your message: '{message}'"
+    reply = await agent_react.run_chat(message)
+    # reply = f"I received your message: '{reply}'"
     return {
         "reply": reply
     }
