@@ -202,12 +202,6 @@
       iconAnchor: [20, 20],
       popupAnchor: [0, -20]
     });
-    const saveIcon = L.icon({
-      iconUrl: 'icons/sendb.png',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -20]
-    });
     const circleIcon = L.icon({
       iconUrl: 'icons/circle.png',
       iconSize: [16, 16],      // adjust size as needed
@@ -289,8 +283,7 @@
           { name: 'Fire station', icon: fire_stationIcon, type: 'marker' },
           { name: 'Area', icon: areaIcon, type: 'area' },
           { name: 'Clear', icon: clearIcon, type: 'clear' },
-          { name: 'Clear All', icon: clearAllIcon, type: 'clearAll' },
-          { name: 'Save', icon: saveIcon, type: 'save' }
+          { name: 'Clear All', icon: clearAllIcon, type: 'clearAll' }
         ];
 
         let currentDrawHandler = null;
@@ -338,6 +331,9 @@
                 const layer = e.layer;
                 drawnItems.addLayer(layer);
 
+                // need to be extacted
+                layer.extract = true;
+
                 const count = ids[name]++;
                 const label = `${name.toUpperCase()} ${count}`;
 
@@ -366,7 +362,6 @@
                 <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
                 <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
                 <small>${coordInfo}</small><br>
-                <button type="submit" style="margin-top: 6px;">Save</button>
                 <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
               </form>
             `;
@@ -439,6 +434,9 @@
                 const layer = e.layer;
                 drawnItems.addLayer(layer);
 
+                // need to be extacted
+                layer.extract = true;
+
                 const count = ids[name]++;
                 const label = `${name.toUpperCase()} ${count}`;
 
@@ -467,7 +465,6 @@
                 <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
                 <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
                 <small>${coordInfo}</small><br>
-                <button type="submit" style="margin-top: 6px;">Save</button>
                 <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
               </form>
             `;
@@ -554,31 +551,6 @@
               selectedLayer = null;
               Object.keys(ids).forEach(k => ids[k] = 1);
             }
-            else if (type === 'save') {
-              clearSelection();
-              // extract_map_features_post();
-
-              // const pathList = [
-              //   [
-              //     { lat: 40.7128, lng: -74.0060 },
-              //     { lat: 40.7308, lng: -73.9975 }
-              //   ],
-              //   [
-              //     { lat: 34.0522, lng: -118.2437 },
-              //     { lat: 34.0407, lng: -118.2468 }
-              //   ],
-              //   [
-              //     { lat: 51.5074, lng: -0.1278 },
-              //     { lat: 51.5155, lng: -0.0922 }
-              //   ]
-              // ];
-
-              // pathList.forEach(coords => {
-              //   drawWaypointPath(coords);
-              // });
-
-
-            }
           };
 
           // Add label under button
@@ -606,6 +578,7 @@
       const rectangle = [];
 
       drawnItems.eachLayer(layer => {
+
         let name = '';
         let id = 0;
         let description = '';
@@ -622,12 +595,19 @@
         description = descMatch ? descMatch[1].trim() : '';
 
         if (layer instanceof L.Marker) {
-          const latlng = layer.getLatLng();
-          coordinates = { lat: latlng.lat, lng: latlng.lng };
 
-          marker.push({ name, id, description, coordinates });
+          if (layer.extract) {
+            const latlng = layer.getLatLng();
+            coordinates = { lat: latlng.lat, lng: latlng.lng };
+
+            marker.push({ name, id, description, coordinates });
+          }
 
         } else if (layer instanceof L.Rectangle) {
+          // Special case for Area 
+          const descMatch = popupContent.match(/^[^:<]+:\s*(.*?)<br>/);
+          description = descMatch ? descMatch[1].trim() : '';
+
           const bounds = layer.getBounds();
           const sw = bounds.getSouthWest();
           const ne = bounds.getNorthEast();
@@ -676,8 +656,12 @@
         return circle;
       });
 
+      // helper variable to skip this in extraction of features
+      waypointCircles.extract = false;
+
       // Link circles with polyline for selection
       polyline._waypointCircles = waypointCircles;
+      polyline.extract = false;
 
       // Zoom to fit the full route
       map.fitBounds(polyline.getBounds());
