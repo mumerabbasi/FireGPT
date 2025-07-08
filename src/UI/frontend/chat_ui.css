@@ -303,33 +303,33 @@ html[data-theme="light"] .add-btn img {
   color: #aabfff;
 }
 
-/* .message.assistant pre,
-      .message.user pre {
-        background: #191c23;
-        color: #e7e7e7;
-        font-size: 15px;
-        margin: 12px 0;
-        padding: 12px;
-        border-radius: 8px;
-        overflow-x: auto;
-      }
+.message.assistant pre,
+.message.user pre {
+  background: #191c23;
+  color: #e7e7e7;
+  font-size: 15px;
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
 
-      .message.assistant code,
-      .message.user code {
-        background: #252525;
-        color: #ffd27f;
-        padding: 3px 7px;
-        border-radius: 4px;
-        font-family: 'Fira Mono', monospace;
-        font-size: 15px;
-      }
+.message.assistant code,
+.message.user code {
+  background: #252525;
+  color: #ffd27f;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-family: 'Fira Mono', monospace;
+  font-size: 15px;
+}
 
-      .message.assistant a,
-      .message.user a {
-        color: #82aaff;
-        text-decoration: underline;
-        word-break: break-all;
-      } */
+.message.assistant a,
+.message.user a {
+  color: #82aaff;
+  text-decoration: underline;
+  word-break: break-all;
+}
 
 .message ul,
 .message ol {
