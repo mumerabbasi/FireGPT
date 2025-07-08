@@ -100,6 +100,10 @@ async def send_chat(
     [
         {"lat": 40.7128, "lng": -74.0060},
         {"lat": 40.7308, "lng": -73.9975}
+    ],
+    [
+        {"lat": 40.7121, "lng": -74.0060},
+        {"lat": 40.7308, "lng": -73.9975}
     ]
     ] if map_features_data else []
 

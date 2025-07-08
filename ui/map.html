@@ -12,6 +12,9 @@
   <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <!-- Leaflet PolylineDecorator JS (Add this AFTER Leaflet) -->
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.7.0/dist/leaflet.polylineDecorator.min.js"></script>
+
   <style>
     html,
     body {
@@ -205,9 +208,17 @@
       iconAnchor: [20, 20],
       popupAnchor: [0, -20]
     });
+    const circleIcon = L.icon({
+      iconUrl: 'icons/circle.png',
+      iconSize: [16, 16],      // adjust size as needed
+      iconAnchor: [8, 8],      // center the icon properly
+      popupAnchor: [0, -8]
+    });
 
     let selectedLayer = null;
+    let selectedWaypoints = [];
 
+    // Clear selection including polyline and linked waypoint circles
     function clearSelection() {
       if (selectedLayer) {
         if (selectedLayer._icon) {
@@ -215,9 +226,48 @@
         } else if (selectedLayer.setStyle) {
           selectedLayer.setStyle({ color: '#353535' });
         }
+
+        // Also clear highlight from associated waypoint circles
+        if (selectedWaypoints.length > 0) {
+          selectedWaypoints.forEach(circle => {
+            if (circle._icon) {
+              circle._icon.classList.remove('selected-layer');
+            } else if (circle.setStyle) {
+              circle.setStyle({ color: '#353535' });
+            }
+          });
+          selectedWaypoints = [];
+        }
+
         selectedLayer = null;
       }
     }
+
+    // When selecting a layer
+    function layerSelection(e) {
+      clearSelection();
+      selectedLayer = e.layer;
+
+      if (selectedLayer._icon) {
+        // It's a marker or circle
+        selectedLayer._icon.classList.add('selected-layer');
+      } else if (selectedLayer.setStyle) {
+        selectedLayer.setStyle({ color: 'red' });
+      }
+
+      // If this is a waypoint polyline, select its waypoint circles too
+      if (selectedLayer._waypointCircles && Array.isArray(selectedLayer._waypointCircles)) {
+        selectedWaypoints = selectedLayer._waypointCircles;
+        selectedWaypoints.forEach(circle => {
+          if (circle._icon) {
+            circle._icon.classList.add('selected-layer');
+          } else if (circle.setStyle) {
+            circle.setStyle({ color: 'red' });
+          }
+        });
+      }
+    }
+
 
     // Clear selection when clicking on the map but not on any layer
     map.on('click', function (e) {
@@ -225,13 +275,7 @@
     });
 
     drawnItems.on('click', function (e) {
-      clearSelection();
-      selectedLayer = e.layer;
-      if (selectedLayer._icon) {
-        selectedLayer._icon.classList.add('selected-layer');
-      } else if (selectedLayer.setStyle) {
-        selectedLayer.setStyle({ color: 'red' });
-      }
+      layerSelection(e);
     });
 
     const VerticalControl = L.Control.extend({
@@ -484,6 +528,13 @@
             else if (type === 'clear') {
               if (selectedLayer) {
                 drawnItems.removeLayer(selectedLayer);
+
+                // Remove all the selected way points if any
+                if (selectedWaypoints.length > 0) {
+                  selectedWaypoints.forEach(circle => { drawnItems.removeLayer(circle) });
+                  selectedWaypoints = [];
+                }
+
                 selectedLayer = null;
               } else {
                 const center = map.getCenter();
@@ -551,16 +602,6 @@
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     function extract_map_features_post() {
-      // const saveButton = [...document.querySelectorAll('.vertical-control .control-item')]
-      //   .find(el => el.querySelector('span')?.innerText === 'Save')
-      //   ?.querySelector('button');
-
-      // if (saveButton) {
-      //   saveButton.disabled = true;
-      //   saveButton.style.opacity = 0.5;
-      //   saveButton.style.pointerEvents = 'none';
-      // }
-
       const marker = [];
       const rectangle = [];
 
@@ -600,31 +641,7 @@
         }
       });
 
-      return {rectangle, marker}
-
-      // data = { rectangle, marker };
-
-      // fetch('http://localhost:8000/map_features', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify(data)
-      // })
-      //   .then(res => res.json())
-      //   .then(response => {
-      //     console.log(`Server Response: ${response.status}, map_features received: ${response.received_count}`);
-      //   })
-      //   .catch(err => {
-      //     alert('Error sending map features: ' + err);
-      //   })
-      //   .finally(() => {
-      //     if (saveButton) {
-      //       saveButton.disabled = false;
-      //       saveButton.style.opacity = 1;
-      //       saveButton.style.pointerEvents = 'auto';
-      //     }
-      //   });
+      return { rectangle, marker }
     }
     //////////////////////////////////////////////////////////////
     function drawWaypointPath(coordsArray) {
@@ -644,22 +661,31 @@
         }
       }).filter(Boolean);
 
+      // Draw polyline
       const polyline = L.polyline(latlngs, {
         color: '#353535',
         weight: 4,
         opacity: 0.8,
         lineJoin: 'round',
         dashArray: '6, 4'
+      }).addTo(drawnItems);
+
+      // Draw waypoint circles and keep references
+      const waypointCircles = latlngs.map(latlng => {
+        const circle = L.marker(latlng, { icon: circleIcon }).addTo(drawnItems);
+        return circle;
       });
 
-      polyline.addTo(drawnItems);
+      // Link circles with polyline for selection
+      polyline._waypointCircles = waypointCircles;
 
-      // Optionally zoom to fit the route
+      // Zoom to fit the full route
       map.fitBounds(polyline.getBounds());
 
-      // Optional: Add popup with summary
+      // Add popup summary
       polyline.bindPopup(`<b>WAYPOINT ROUTE</b><br>Points: ${latlngs.length}`).openPopup();
     }
+
     //////////////////////////////////////////////////////////////////////////
 
   </script>
