@@ -1,4 +1,4 @@
-const map = L.map('map').setView([45.5236, -122.6750], 13);
+const map = L.map('map').setView([48.137154, 11.576124], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -193,11 +193,11 @@ const VerticalControl = L.Control.extend({
               ? `Lat: ${popupLatLng.lat.toFixed(5)}, Lng: ${popupLatLng.lng.toFixed(5)}`
               : (() => {
                 const bounds = layer.getBounds();
-                const sw = bounds.getSouthWest();
-                const ne = bounds.getNorthEast();
+                const nw = bounds.getNorthWest();
+                const se = bounds.getSouthEast();
                 return `
-                    <b>SW:</b> (${sw.lat.toFixed(5)}, ${sw.lng.toFixed(5)})<br>
-                    <b>NE:</b> (${ne.lat.toFixed(5)}, ${ne.lng.toFixed(5)})
+                    <b>NW:</b> (${nw.lat.toFixed(5)}, ${nw.lng.toFixed(5)})<br>
+                    <b>SE:</b> (${se.lat.toFixed(5)}, ${se.lng.toFixed(5)})
                   `;
               })();
 
@@ -207,6 +207,7 @@ const VerticalControl = L.Control.extend({
                 <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
                 <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
                 <small>${coordInfo}</small><br>
+                <button type="submit" style="margin-top: 6px;">Save</button>
                 <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
               </form>
             `;
@@ -296,11 +297,11 @@ const VerticalControl = L.Control.extend({
               ? `Lat: ${popupLatLng.lat.toFixed(5)}, Lng: ${popupLatLng.lng.toFixed(5)}`
               : (() => {
                 const bounds = layer.getBounds();
-                const sw = bounds.getSouthWest();
-                const ne = bounds.getNorthEast();
+                const nw = bounds.getNorthWest();
+                const se = bounds.getSouthEast();
                 return `
-                    <b>SW:</b> (${sw.lat.toFixed(5)}, ${sw.lng.toFixed(5)})<br>
-                    <b>NE:</b> (${ne.lat.toFixed(5)}, ${ne.lng.toFixed(5)})
+                    <b>NW:</b> (${nw.lat.toFixed(5)}, ${nw.lng.toFixed(5)})<br>
+                    <b>SE:</b> (${se.lat.toFixed(5)}, ${se.lng.toFixed(5)})
                   `;
               })();
 
@@ -310,6 +311,7 @@ const VerticalControl = L.Control.extend({
                 <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
                 <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
                 <small>${coordInfo}</small><br>
+                <button type="submit" style="margin-top: 6px;">Save</button>
                 <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
               </form>
             `;
@@ -454,12 +456,12 @@ function extract_map_features_post() {
       description = descMatch ? descMatch[1].trim() : '';
 
       const bounds = layer.getBounds();
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
+      const nw = bounds.getNorthWest();
+      const se = bounds.getSouthEast();
 
       coordinates = {
-        sw: { lat: sw.lat, lng: sw.lng },
-        ne: { lat: ne.lat, lng: ne.lng }
+        nw: { lat: nw.lat, lng: nw.lng },
+        se: { lat: se.lat, lng: se.lng }
       };
 
       rectangle.push({ name, id, description, coordinates });
