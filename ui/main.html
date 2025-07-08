@@ -244,19 +244,21 @@
     }
 
     .message {
-      max-width: 80%;
-      padding: 12px var(--padding-base);
-      border-radius: 12px;
+      max-width: 100%;
+      padding: 12px 24px var(--padding-base);
+      border-radius: 24px;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 2;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       word-break: break-word;
+      overflow-wrap: anywhere; /* Ensure long words wrap */
     }
 
     .message.user {
       background: #353535;
       color: #ffffff;
       align-self: flex-end;
+      text-align: left; /* ensures text isn't centered */
     }
 
     .message.assistant {
@@ -439,6 +441,30 @@
       .right-sidebar.open {
         transform: translateX(-10%);
       }
+
+      .message.assistant pre,
+      .message.user pre {
+        background: #222;
+        padding: 8px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-family: monospace;
+      }
+
+      .message.assistant code,
+      .message.user code {
+        background: #282828;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+
+      .message.assistant a,
+      .message.user a {
+        color: var(--accent);
+        text-decoration: underline;
+        word-break: break-all;
+      }
     }
   </style>
 </head>
@@ -494,8 +520,10 @@
           title="Emergency Response Map"></iframe></div>
     </aside>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
   <script>
-    
+
 
 
     /////// Backend URL /////////
@@ -609,7 +637,9 @@
         });
         const result = await response.json();
         if (response.ok) {
-          if (result.reply) appendMessage(result.reply, 'assistant');
+          if (result.reply) {
+            appendMessage(result.reply, 'assistant');
+          }
           // Draw the pathList if any 
           if (result.pathList) {
             result.pathList.forEach(coords => {
@@ -645,10 +675,19 @@
       }
     });
 
+    // function appendMessage(text, role) {
+    //   const msg = document.createElement('div'); msg.className = `message ${role}`; msg.textContent = text;
+    //   messagesArea.appendChild(msg); messagesArea.scrollTop = messagesArea.scrollHeight;
+    // }
+
     function appendMessage(text, role) {
-      const msg = document.createElement('div'); msg.className = `message ${role}`; msg.textContent = text;
-      messagesArea.appendChild(msg); messagesArea.scrollTop = messagesArea.scrollHeight;
+      const msg = document.createElement('div');
+      msg.className = `message ${role}`;
+      msg.innerHTML = DOMPurify.sanitize(marked.parse(text));
+      messagesArea.appendChild(msg);
+      messagesArea.scrollTop = messagesArea.scrollHeight;
     }
+
     function appendImage(src, role) {
       const msg = document.createElement('div'); msg.className = `message ${role}`;
       const img = document.createElement('img'); img.src = src; msg.appendChild(img);
