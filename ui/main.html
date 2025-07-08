@@ -200,16 +200,6 @@
       padding: var(--padding-base);
     }
 
-    .source-item {
-      padding: 8px 0;
-      font-size: 14px;
-      color: var(--text-muted);
-      word-break: break-all;
-    }
-
-    .source-item button:hover {
-      color: #d32f2f;
-    }
 
     .main-content {
       display: flex;
@@ -244,34 +234,143 @@
     }
 
     .message {
-      max-width: 100%;
-      padding: 12px 24px var(--padding-base);
-      border-radius: 24px;
-      font-size: 14px;
-      line-height: 2;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      background: #23232e;
+      color: #f5f6fa;
+      border-radius: 18px 18px 18px 4px;
+      padding: 18px 28px;
+      font-size: 16px;
+      line-height: 1.75;
+      margin: 10px 0;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      max-width: 88%;
       word-break: break-word;
-      overflow-wrap: anywhere; /* Ensure long words wrap */
+      transition: background 0.2s;
+      animation: fadein 0.4s;
+    }
+
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
     }
 
     .message.user {
-      background: #353535;
-      color: #ffffff;
+      background: #252525;
+      color: #fff;
       align-self: flex-end;
-      text-align: left; /* ensures text isn't centered */
+      border-radius: 18px 4px 18px 18px;
+      /* box-shadow: 0 4px 16px rgba(50,90,255,0.12); */
     }
 
     .message.assistant {
-      background: #353535;
-      color: #ffffff;
+      background: #23232e;
+      color: #f5f6fa;
       align-self: flex-start;
     }
 
     .message img {
       max-width: 200px;
-      border-radius: 6px;
+      border-radius: 8px;
       margin-top: 8px;
     }
+
+    .message pre {
+      background: #191c23;
+      color: #ffe;
+      font-size: 15px;
+      margin: 12px 0;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    .message code {
+      background: #2a2a36;
+      color: #ffd27f;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-family: 'Fira Mono', monospace;
+      font-size: 15px;
+    }
+
+    .message a {
+      color: #6b9eff;
+      text-decoration: underline;
+      font-weight: 500;
+      word-break: break-all;
+      transition: color 0.2s;
+    }
+
+    .message a:hover {
+      color: #aabfff;
+    }
+
+    /* .message.assistant pre,
+      .message.user pre {
+        background: #191c23;
+        color: #e7e7e7;
+        font-size: 15px;
+        margin: 12px 0;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+
+      .message.assistant code,
+      .message.user code {
+        background: #252525;
+        color: #ffd27f;
+        padding: 3px 7px;
+        border-radius: 4px;
+        font-family: 'Fira Mono', monospace;
+        font-size: 15px;
+      }
+
+      .message.assistant a,
+      .message.user a {
+        color: #82aaff;
+        text-decoration: underline;
+        word-break: break-all;
+      } */
+
+    .message ul,
+    .message ol {
+      margin: 14px 0 14px 34px;
+      padding-left: 12px;
+      color: #e1e5fa;
+    }
+
+    .message li {
+      margin: 6px 0;
+    }
+
+    .message blockquote {
+      border-left: 5px solid #6b9eff;
+      background: #1a2240;
+      color: #b0c4de;
+      margin: 14px 0;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-style: italic;
+    }
+
+    .message strong {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .message em {
+      color: #fff;
+      font-style: italic;
+    }
+
+    
 
     .input-area {
       position: sticky;
@@ -441,31 +540,86 @@
       .right-sidebar.open {
         transform: translateX(-10%);
       }
-
-      .message.assistant pre,
-      .message.user pre {
-        background: #222;
-        padding: 8px;
-        border-radius: 6px;
-        overflow-x: auto;
-        font-family: monospace;
-      }
-
-      .message.assistant code,
-      .message.user code {
-        background: #282828;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-family: monospace;
-      }
-
-      .message.assistant a,
-      .message.user a {
-        color: var(--accent);
-        text-decoration: underline;
-        word-break: break-all;
-      }
     }
+
+    /*  For Source Docuemment buttons        */
+
+    /* --- Default (Dark) Theme --- */
+    /* --- Dark Theme (default) --- */
+html[data-theme="dark"] .doc-item {
+  border: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color:var(--bg-tertiary);
+  color: var(--text-light);
+}
+
+html[data-theme="dark"] .doc-remove-btn {
+  margin-left: 10px;
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* --- Light Theme --- */
+html[data-theme="light"] .doc-item {
+  border: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-tertiary);
+  color: var(--text-light);
+}
+
+html[data-theme="light"] .doc-remove-btn {
+  margin-left: 10px;
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+    /*  For Remove All Button Docuemment buttons        */
+.add-btn.danger {
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+}
+
+html[data-theme="light"] .add-btn.danger {
+  background: #f44336;
+  color: #fff;
+  border: 1px solid #e57373; /* subtle border for definition */
+  box-shadow: 0 2px 4px rgba(244,67,54,0.09);
+}
+
+html[data-theme="light"] .add-btn.danger img {
+  filter: brightness(0) invert(1);
+}
+
+.add-btn.danger:hover:not(:disabled),
+html[data-theme="light"] .add-btn.danger:hover:not(:disabled) {
+  background: #d32f2f;
+  color: #fff;
+  filter: none;
+}
+
+.add-btn.danger:active {
+  background: #b71c1c;
+}
+
+
+
   </style>
 </head>
 
@@ -486,9 +640,9 @@
             <img src="./icons/adddocuments.png" alt="Add Documents" />
             <span>Add Documents</span>
           </button>
-          <button class="add-btn" id="removeAllDocumentsBtn" onclick="removeAllDocuments()" style="background: #d32f2f;"
-            title="Remove All">
-            <img src="./icons/delete.png" alt="Remove All" /><span>Remove All</span>
+                    <button class="add-btn danger"" id="removeAllDocumentsBtn" onclick="removeAllDocuments()" title="Remove All">
+            <img src="./icons/delete.png" alt="Remove All" />
+            <span>Remove All</span>
           </button>
         </div>
         <input id="fileInput" type="file" accept="application/pdf" multiple hidden />
@@ -766,28 +920,15 @@
 
     function addSourceItem(filename) {
       const div = document.createElement('div');
-      div.className = 'source-item';
+      div.className = 'doc-item';
       div.textContent = filename;
 
-      // Apply styles
-      div.style.border = '1px solid #353535';
-      div.style.borderRadius = '8px';
-      div.style.padding = '8px 12px';
-      div.style.marginBottom = '10px';
-      div.style.display = 'flex';
-      div.style.alignItems = 'center';
-      div.style.justifyContent = 'space-between';
-      div.style.backgroundColor = '#353535'; // Gray background
-      div.style.color = '#ffffff'; // White font color
 
       const removeBtn = document.createElement('button');
       removeBtn.textContent = '✕';
-      removeBtn.style.marginLeft = '10px';
-      removeBtn.style.background = 'none';
-      removeBtn.style.border = 'none';
-      removeBtn.style.color = '#d32f2f'; // Match text color
-      removeBtn.style.cursor = 'pointer';
-      removeBtn.style.fontSize = '16px';
+      removeBtn.className = 'doc-remove-btn';
+
+
 
       removeBtn.onclick = async function () {
         removeBtn.disabled = true;
