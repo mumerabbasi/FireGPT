@@ -223,6 +223,8 @@ html[data-theme="light"] .add-btn img {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted) transparent;
 }
 
 .message {
