@@ -610,3 +610,27 @@ html[data-theme="light"] .add-btn.danger:hover:not(:disabled) {
 .add-btn.danger:active {
   background: #b71c1c;
 }
+
+
+/* .... For thinking ... */
+
+.typing {
+  font-style: italic;
+  color: #888;
+}
+
+.dots::after {
+  content: '';
+  display: inline-block;
+  animation: dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+}
+
+
+/* ...................... */

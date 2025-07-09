@@ -93,6 +93,9 @@ async function sendMessage() {
   previewArea.innerHTML = '';
   chatInput.style.height = 'auto';
 
+  // Thinking ... logic
+  const assistant_replay = appendMessage(`<span class="typing dots">Thinking</span>`, 'assistant');
+
   // Fetch 
   try {
     const response = await fetch(backend_url + "/send-chat", {
@@ -102,7 +105,7 @@ async function sendMessage() {
     const result = await response.json();
     if (response.ok) {
       if (result.reply) {
-        appendMessage(result.reply, 'assistant');
+        changeMessage(assistant_replay, result.reply);
       }
       // Draw the pathList if any 
       if (result.pathList) {
@@ -111,11 +114,11 @@ async function sendMessage() {
         });
       }
     } else {
-      appendMessage("Error: " + result.detail, 'assistant');
+      changeMessage(assistant_replay, "Error: " + result.detail);
     }
   } catch (err) {
     console.error("Send failed:", err);
-    appendMessage("Network error", 'assistant');
+    changeMessage(assistant_replay, "Network error");
   }
 
   // Reset input UI
@@ -139,16 +142,19 @@ chatInput.addEventListener('keydown', e => {
   }
 });
 
-// function appendMessage(text, role) {
-//   const msg = document.createElement('div'); msg.className = `message ${role}`; msg.textContent = text;
-//   messagesArea.appendChild(msg); messagesArea.scrollTop = messagesArea.scrollHeight;
-// }
-
+// Append a new message //
 function appendMessage(text, role) {
   const msg = document.createElement('div');
   msg.className = `message ${role}`;
   msg.innerHTML = DOMPurify.sanitize(marked.parse(text));
   messagesArea.appendChild(msg);
+  messagesArea.scrollTop = messagesArea.scrollHeight;
+  return msg;
+}
+
+// Just change the message do not append it //
+function changeMessage(msg_div, text) {
+  msg_div.innerHTML = DOMPurify.sanitize(marked.parse(text));
   messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 

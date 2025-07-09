@@ -7,7 +7,7 @@ import uuid
 from typing import List, Optional
 import json
 from fastapi.staticfiles import StaticFiles
-
+import time
 
 app = FastAPI()
 
@@ -82,6 +82,8 @@ async def send_chat(
 ):
     print(f"Message: {message}")
     
+    time.sleep(1) ## simulate response
+
     # Process uploaded images
     if images:
         for image in images:
