@@ -131,8 +131,6 @@ async function sendMessage() {
 
     const result = await response.json();
 
-    assistant_replay.remove(); // remove the thinking .. dev
-
     if (response.ok) {
       if (result.reply) {
         appendMessage(result.reply, 'assistant');
@@ -151,6 +149,8 @@ async function sendMessage() {
     appendMessage("Network error", 'assistant');
   }
 
+  if(assistant_replay) assistant_replay.remove(); // remove the thinking .. dev
+  
   // Reset input UI
   chatInput.value = '';
   imageInput.value = '';
