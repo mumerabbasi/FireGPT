@@ -14,6 +14,9 @@ from typing import List
 
 from fastmcp import FastMCP
 from pydantic import BaseModel
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain.retrievers import ContextualCompressionRetriever
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
@@ -30,15 +33,22 @@ from forest_fire_gee.types import Response
 # Configuration & Logging
 # ----------------------------------------------------------------------------
 
+# DB Paths and Configuration
+DB_PATH_SESSION = Path(os.getenv("FGPT_DB_PATH_SESSION", "stores/session"))
 DB_PATH_LOCAL = Path(os.getenv("FGPT_DB_PATH_LOCAL", "stores/local"))
-DB_PATH_GLOBAL = Path(os.getenv("FGPT_DB_PATH_LOCAL", "stores/global"))
+DB_PATH_GLOBAL = Path(os.getenv("FGPT_DB_PATH_GLOBAL", "stores/global"))
+
 EMB_MODEL = Path(os.getenv("FGPT_EMBED_MODEL", "models/bge-base-en-v1.5"))
+RERANK_MODEL = Path(os.getenv("FGPT_RERANK_MODEL", "models/bge-reranker-base"))
 COLL_NAME = os.getenv("FGPT_COLLECTION", "fire_docs")
+CANDIDATE_K = int(os.getenv("FGPT_CANDIDATE_K", "50"))
 TOP_K = int(os.getenv("FGPT_TOP_K", "5"))
 
+# MCP Server Configuration
 HOST = os.getenv("FGPT_HOST", "0.0.0.0")
 PORT = int(os.getenv("FGPT_PORT", "7790"))
 
+# Logging Configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
 LOG = logging.getLogger("firegpt.fastmcp")
 
@@ -49,17 +59,46 @@ LOG = logging.getLogger("firegpt.fastmcp")
 # FireGEE API client
 client = FireGEE(base_url="https://api.firefirefire.lol")
 
-# Embedding model - *still needed* at retrieval time!
+# Embedding model
 LOG.info("Loading embeddings from %s …", EMB_MODEL)
 _embedder = HuggingFaceEmbeddings(model_name=str(EMB_MODEL), model_kwargs={"local_files_only": True})
 
-# LangChain → Chroma wrapper
+# Reranker model
+_cross_encoder = HuggingFaceCrossEncoder(
+    model_name=str(RERANK_MODEL),
+    model_kwargs={
+        "device": "cuda",
+        "local_files_only": True,
+    },
+)
+
+_reranker = CrossEncoderReranker(model=_cross_encoder, top_n=TOP_K)
+
+# Initialize Chroma vector stores
+LOG.info("Connecting to ChromaDB at %s, collection '%s'…", DB_PATH_SESSION, COLL_NAME)
+_store_session = Chroma(collection_name=COLL_NAME, persist_directory=str(DB_PATH_SESSION), embedding_function=_embedder)
+
 LOG.info("Connecting to ChromaDB at %s, collection '%s'…", DB_PATH_LOCAL, COLL_NAME)
 _store_local = Chroma(collection_name=COLL_NAME, persist_directory=str(DB_PATH_LOCAL), embedding_function=_embedder)
 
-# LangChain → Chroma wrapper
 LOG.info("Connecting to ChromaDB at %s, collection '%s'…", DB_PATH_GLOBAL, COLL_NAME)
 _store_global = Chroma(collection_name=COLL_NAME, persist_directory=str(DB_PATH_GLOBAL), embedding_function=_embedder)
+
+# Wrap each vector store in a ContextualCompressionRetriever
+_retriever_session = ContextualCompressionRetriever(
+    base_retriever=_store_session.as_retriever(search_kwargs={"k": CANDIDATE_K}),
+    base_compressor=_reranker,
+)
+
+_retriever_local = ContextualCompressionRetriever(
+    base_retriever=_store_local.as_retriever(search_kwargs={"k": CANDIDATE_K}),
+    base_compressor=_reranker,
+)
+
+_retriever_global = ContextualCompressionRetriever(
+    base_retriever=_store_global.as_retriever(search_kwargs={"k": CANDIDATE_K}),
+    base_compressor=_reranker,
+)
 
 
 # ----------------------------------------------------------------------------
@@ -103,10 +142,40 @@ def docs_metadata() -> List[MetaEntry]:
 
 
 @mcp.tool
+def retrieve_chunks_session(
+    query: str,
+) -> List[DocHit]:
+    """Semantic retrieval with relevance scores of FireFighting SOPs from the user-provided docs.
+
+    Parameters
+    ----------
+    query : str
+        Natural-language search string.
+
+    Returns
+    -------
+    List[DocHit]
+        Vector hits including their similarity score ∈ [0, 1].
+    """
+    docs = _retriever_session.invoke(query)
+    hits: List[DocHit] = []
+    for doc in docs:
+        meta = doc.metadata or {}
+        hits.append(
+            DocHit(
+                id=meta.get("id", ""),
+                pdf=meta.get("source", ""),
+                pages=meta.get("pages", -1),
+                text=doc.page_content,
+                score=float(doc.metadata.get("rerank_score", 1.0)),
+            )
+        )
+    return hits
+
+
+@mcp.tool
 def retrieve_chunks_local(
     query: str,
-    k: int = TOP_K,
-    score_threshold: float | None = 0.2,
 ) -> List[DocHit]:
     """Semantic retrieval with relevance scores of FireFighting SOPs implemented in my region.
 
@@ -114,42 +183,31 @@ def retrieve_chunks_local(
     ----------
     query : str
         Natural-language search string.
-    k : int, default *(env FGPT_TOP_K)*
-        Maximum number of hits to return **before** filtering.
-    score_threshold : float | None, default 0.2
-        Drop results whose relevance score is below this value.
-        Set to *None* to disable filtering.
 
     Returns
     -------
     List[DocHit]
         Vector hits including their similarity score ∈ [0, 1].
     """
-
-    # Wrapper method embeds the query for us
-    raw_hits = _store_local.similarity_search_with_relevance_scores(query, k=k)
-    filtered_hits: List[DocHit] = []
-    for doc, score in raw_hits:
-        if score_threshold is not None and score < score_threshold:
-            continue
+    docs = _retriever_local.invoke(query)
+    hits: List[DocHit] = []
+    for doc in docs:
         meta = doc.metadata or {}
-        filtered_hits.append(
+        hits.append(
             DocHit(
                 id=meta.get("id", ""),
                 pdf=meta.get("source", ""),
                 pages=meta.get("pages", -1),
                 text=doc.page_content,
-                score=score,
+                score=float(doc.metadata.get("rerank_score", 1.0)),
             )
         )
-    return filtered_hits
+    return hits
 
 
 @mcp.tool
 def retrieve_chunks_global(
     query: str,
-    k: int = TOP_K,
-    score_threshold: float | None = 0.2,
 ) -> List[DocHit]:
     """Semantic retrieval with relevance scores of FireFighting SOPs implemented in my region.
 
@@ -157,35 +215,26 @@ def retrieve_chunks_global(
     ----------
     query : str
         Natural-language search string.
-    k : int, default *(env FGPT_TOP_K)*
-        Maximum number of hits to return **before** filtering.
-    score_threshold : float | None, default 0.2
-        Drop results whose relevance score is below this value.
-        Set to *None* to disable filtering.
 
     Returns
     -------
     List[DocHit]
         Vector hits including their similarity score ∈ [0, 1].
     """
-
-    # Wrapper method embeds the query for us
-    raw_hits = _store_global.similarity_search_with_relevance_scores(query, k=k)
-    filtered_hits: List[DocHit] = []
-    for doc, score in raw_hits:
-        if score_threshold is not None and score < score_threshold:
-            continue
+    docs = _retriever_global.invoke(query)
+    hits: List[DocHit] = []
+    for doc in docs:
         meta = doc.metadata or {}
-        filtered_hits.append(
+        hits.append(
             DocHit(
                 id=meta.get("id", ""),
                 pdf=meta.get("source", ""),
                 pages=meta.get("pages", -1),
                 text=doc.page_content,
-                score=score,
+                score=float(doc.metadata.get("rerank_score", 1.0)),
             )
         )
-    return filtered_hits
+    return hits
 
 
 @mcp.tool

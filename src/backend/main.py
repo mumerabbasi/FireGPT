@@ -45,10 +45,9 @@ CHAT_IMAGE_DIR = BASE_DIR / "chat_images"
 SESSION_DIRS = (UPLOAD_DIR, STORE_DIR, CHAT_IMAGE_DIR)
 FRONTEND_DIR = Path("../frontend")
 
-
+# Vision Language Model API Configuration
 OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
-OPENAI_MODEL = os.getenv("FGPT_MODEL", "ZimaBlueAI/Qwen2.5-VL-7B-Instruct")
-
+OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen2.5vl")
 # ---------------------------------------------------------------------------
 # Application setup
 # ---------------------------------------------------------------------------
@@ -113,7 +112,7 @@ def parse_agent_reply(raw: str) -> Tuple[str, Optional[Any]]:
 def parse_map_features(raw: str) -> tuple[Optional[dict[str, Any]], Optional[list[dict[str, Any]]]]:
     """Convert *map_features* JSON into ``fire_bbox`` and ``pois`` structures.
 
-    Example *map_features* (shortened):
+    Example map_features:
     ```json
     {
         "rectangle": [
@@ -190,10 +189,10 @@ async def caption_images(
                         "type": "text",
                         "text": (
                             "You are an image analyst for a wildfire-incident assistant.\n"
-                            "Describe ONLY the operationally relevant elements you see in "
-                            "this image (e.g. fire perimeter, attack routes, water pick-up "
-                            "points, helicopter lanes, labelled flanks, legend items). "
-                            "List them as short bullet points."
+                            "Describe all the elements you see in this image (e.g. fire "
+                            "perimeter, attack routes, water pick-up points, helicopter "
+                            "lanes, labelled flanks, legend items et) in detail."
+                            "List them as detailed bullet points."
                         ),
                     },
                     {"type": "image_url", "image_url": {"url": data_url}},
@@ -321,7 +320,7 @@ async def _startup() -> None:  # noqa: D401
     # Initialize the Vision API client
     app.state.llm = ChatOpenAI(
         model_name=OPENAI_MODEL,
-        # temperature=0,
+        temperature=0,
         streaming=True,
         callbacks=[StreamingStdOutCallbackHandler()],
         openai_api_base=OPENAI_BASE,
