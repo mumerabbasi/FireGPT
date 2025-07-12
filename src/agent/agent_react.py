@@ -42,7 +42,7 @@ MCP_SERVERS = {
 }
 
 OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
-OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen3:8b")
+OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen3:32b")
 
 # -----------------------------------------------------------
 # Demo geometry (will be injected by GUI later)
@@ -79,52 +79,89 @@ class IncidentContext:
 # -----------------------------------------------------------
 BASE_RULES = (
     """
-    You are **FireGPT**, a professional wildfire-incident assistant. Accuracy and
-    safety are paramount.
+        You are **FireGPT**, a professional wildfire-incident assistant.
+        Accuracy, safety, and transparency are paramount.
 
-    ### General principles
-    * Respond only with information that is justified by
-    - tool outputs,
-    - the conversation so far, **or**
-    - your own background knowledge **when the question is *not* about the current
-        incident.** If you are uncertain, say so instead of inventing facts.
+        -------------------------------------------------------------------------------
+        GENERAL BEHAVIOUR
+        -------------------------------------------------------------------------------
+        • *Conversation memory* - you CAN and SHOULD reference the full message list
+        provided in the conversation state. Treat it as your short-term memory.
+        • *Scope*
+        - **Fire-related or SOP questions:** follow the domain-specific rules below.
+        - **Other questions:** rely on your own background knowledge.
 
-    ### Tools
-    * `assess_fire_danger(bbox)` — returns per-cell danger metrics.
-    * `retrieve_chunks_local(query)` — jurisdiction-specific SOPs (**use first**).
-    * `retrieve_chunks_global(query)` — global best-practice docs (fallback).
+        -------------------------------------------------------------------------------
+        TOOLS AVAILABLE
+        -------------------------------------------------------------------------------
+        1. `assess_fire_danger(bbox)`
+            -> returns per-cell metrics like landcover percentage, landcover type,
+            weather, wind speed and direction, fire risk level, and some other
+            parameters. Use this to assess fire danger, before guiding the user
+            or generating waypoints.
 
-    ### When the user supplies a bounding box (`bbox`)
-    1. Call `assess_fire_danger` **exactly once**. Call `assess_fire_danger` **exactly once**.
-    2. **Drone way-points requested?**
-    * Return **only** a JSON array with **6-12** `[lat, lon]` pairs (no keys,
-        comments, or prose).
-    * Waypoints must be safe for drone to operate in.
-    3. **SOPs/guidance requested?**
-    * Query `retrieve_chunks_local` first.
-    * Use `retrieve_chunks_global` only if relevant local guidance is missing.
+        2. `retrieve_chunks_local(query)`
+            -> returns passages from jurisdiction-specific Standard Operating
+            Procedures (SOPs). **Always query this first**.
 
-    ### Additional rules
-    * Distinguish between **action** (way-points) and **information** (SOPs, status)
-    requests and answer accordingly.
+        3. `retrieve_chunks_global(query)`
+            -> returns passages from global best-practice documents. Use only when
+            local retrieval returns nothing relevant.
+
+        -------------------------------------------------------------------------------
+        RULES FOR FIRE-RELATED TASKS
+        -------------------------------------------------------------------------------
+        A. **Fire Bounding box handling**
+        • If the user supplies a **new** fire bounding box (`bbox`), call
+            `assess_fire_danger(bbox)` **exactly once** for that bbox.
+        • If the user does **not** supply a bbox in a later turn, assume the most
+            recently provided bbox is still valid.
+        • If the user provides a different bbox later, treat it as new and call the
+            tool again (once).
+
+        B. **SOP retrieval & advice**
+        • When the user asks for SOPs, guidance, or strategy:
+            1. Query **`retrieve_chunks_local`** with a concise description of the
+                scenario (fuel type, wind, terrain, etc.).
+            2. If no pertinent local passages are returned, fall back to
+                `retrieve_chunks_global`.
+        • **Summarise** the retrieved guidance in your own words. If you cite
+            authority, reference it briefly, e.g.
+            > *“Per Local SOP §4.3 (mixed-forest containment) …”*
+            Do **not** dump raw passages.
+
+        C. **Drone waypoint generation**
+        • When the user requests way-points to perform a specific task with drones, follow
+            the following instructions to generate waypoints to perform the task effectively:
+            * If you have a bounding box:
+                - Call `assess_fire_danger()` with bbox to get the context of fire region.
+            * Retrieve relevant SOPs and operational guides using `retrieve_chunks_local()` and/or
+              `retrieve_chunks_global()`.
+            * Reason about choosing waypoints based on the fire danger assessment (if fire bbox is given),
+              and retrieved SOPs.
+            * Provide a JSON **array** of **4-8** `[lat, lon]` pairs. Do not put **any comments** in the json.
+            * If the user asks for the explanation of the waypoints, do not put the explanation
+              in the comments of the json, but rather provide them in the text as plain sentences.
+
+        -------------------------------------------------------------------------------
+        FAIL-SAFE
+        -------------------------------------------------------------------------------
+        If you are not confident in your answer, say so clearly rather than inventing
+        facts or ignoring the rules above.
     """
 ).strip()
 
 
-def build_context_msg(ctx: IncidentContext) -> HumanMessage | None:
-    """Return a fenced JSON block with bbox/POIs or *None* if both absent."""
-
-    if ctx.is_empty:
-        return None
-
+def build_context_msg(fire_bbox, pois) -> str | None:
+    """Return a context message with bbox/POIs or *None* if both absent."""
     context_dict: dict[str, Any] = {}
-    if ctx.bbox is not None and len(ctx.bbox) == 2:
-        context_dict["bbox"] = ctx.bbox
-    if ctx.pois is not None and len(ctx.pois) > 0:
-        context_dict["pois"] = ctx.pois
+    if fire_bbox is not None:
+        context_dict["fire_bbox"] = fire_bbox
+    if pois is not None and len(pois) > 0:
+        context_dict["points_of_interest"] = pois
 
-    content = "CONTEXT\n```json\n" + json.dumps(context_dict, indent=2) + "\n```"
-    return HumanMessage(content=content)
+    content = "FIRE REGION CONTEXT:\n```json\n" + json.dumps(context_dict, indent=2) + "\n```"
+    return content if context_dict else None
 
 
 # -----------------------------------------------------------
@@ -132,7 +169,7 @@ def build_context_msg(ctx: IncidentContext) -> HumanMessage | None:
 # -----------------------------------------------------------
 
 
-def load_tools() -> list:  # -> list[BaseTool]
+def load_tools() -> list:
     client = MultiServerMCPClient(MCP_SERVERS)
     return asyncio.run(client.get_tools())
 
@@ -185,9 +222,9 @@ def last_ai_message(messages: Iterable[BaseMessage]) -> AIMessage:
 
 async def run_turn(
     graph: StateGraph,
-    user_prompt: str,
-    ctx: IncidentContext,
     thread_id: str,
+    user_prompt: str,
+    context_msg: str | None = None
 ) -> tuple[str, IncidentContext]:
     """Execute one conversational turn and return (assistant_reply, ctx)."""
 
@@ -197,15 +234,13 @@ async def run_turn(
     messages.append(SystemMessage(content=BASE_RULES))
 
     # 2. Context message if we have geometry
-    if not ctx.is_empty:
-        context_msg = build_context_msg(ctx)
-        if context_msg:
-            messages.append(context_msg)
+    if context_msg is not None:
+        messages.append(HumanMessage(content=context_msg))
 
     # 3. User prompt
     messages.append(HumanMessage(content=user_prompt))
 
-    initial_state = {"messages": messages, "ctx": ctx}
+    initial_state = {"messages": messages}
 
     out: AgentState = await graph.ainvoke(
         initial_state,
@@ -214,9 +249,9 @@ async def run_turn(
             "configurable": {"thread_id": thread_id},
         },
     )
-    '''print("STATE----------------------")
+    print("STATE----------------------")
     print(out)
-    print("STATE----------------------")'''
+    print("STATE END----------------------")
     reply = last_ai_message(out["messages"]).content
     return reply
 
@@ -226,7 +261,7 @@ async def run_turn(
 # -----------------------------------------------------------
 
 
-async def run_cli() -> None:  # pragma: no cover – interactive
+async def run_cli() -> None:  # pragma: no cover - interactive
     graph = await compile_graph()
     thread_id = f"fire-session-{uuid.uuid4()}"
 
@@ -266,19 +301,19 @@ async def run_cli() -> None:  # pragma: no cover – interactive
 # -----------------------------------------------------------
 
 
-async def run_chat(graph, thread_id, user_prompt, bbox, pois):
+async def run_chat(graph, thread_id, user_prompt, fire_bbox, pois):
     graph = graph
     thread_id = thread_id
 
     # Initial geometry
-    current_ctx = IncidentContext(bbox=bbox, pois=pois)
+    context_msg = build_context_msg(fire_bbox, pois)
 
     print("\nFireGPT - async CLI (type 'exit' to quit)\n")
     reply = await run_turn(
         graph,
-        user_prompt,
-        current_ctx,
         thread_id,
+        user_prompt,
+        context_msg,
     )
     return reply
 

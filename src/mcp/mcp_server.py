@@ -50,8 +50,6 @@ LOG = logging.getLogger("firegpt.fastmcp")
 client = FireGEE(base_url="https://api.firefirefire.lol")
 
 # Embedding model - *still needed* at retrieval time!
-# Stored vectors already live on disk, but we have to embed the **query**
-# into the very same vector space before Chroma can run a nearest-neighbour search.
 LOG.info("Loading embeddings from %s …", EMB_MODEL)
 _embedder = HuggingFaceEmbeddings(model_name=str(EMB_MODEL), model_kwargs={"local_files_only": True})
 
