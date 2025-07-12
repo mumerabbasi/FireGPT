@@ -193,11 +193,26 @@ function changeMessage(msg_div, text) {
 function appendImage(src, role) {
   const msg = document.createElement('div');
   msg.className = `message ${role}`;
+
+  // Create a link element for Fancybox
+  const link = document.createElement('a');
+  link.href = src;
+  link.setAttribute('data-fancybox', 'gallery'); // Optional group name
+
+  // Create the image element
   const img = document.createElement('img');
   img.src = src;
-  msg.appendChild(img);
+  img.style.cursor = 'pointer';
+  img.style.maxWidth = '200px'; // optional: limit size in chat
+
+  // Append image to link, and link to the message
+  link.appendChild(img);
+  msg.appendChild(link);
+
+  // Append message to chat area
   messagesArea.appendChild(msg);
   messagesArea.scrollTop = messagesArea.scrollHeight;
+
 }
 
 // ---------------------------------------------------------------------------
