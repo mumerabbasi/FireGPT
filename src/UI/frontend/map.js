@@ -1,16 +1,29 @@
+// ---------------------------------------------------------------------------
+// Map initialization
+// ---------------------------------------------------------------------------
 const map = L.map('map').setView([48.137154, 11.576124], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
 }).addTo(map);
 
-// Add search control
+// ---------------------------------------------------------------------------
+// Search control
+// ---------------------------------------------------------------------------
+
 L.Control.geocoder({ defaultMarkGeocode: true }).addTo(map);
+
+// ---------------------------------------------------------------------------
+// Drawn layer group setup
+// ---------------------------------------------------------------------------
 
 const drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
-// Icons for markers and controls (all L.icon!)
+// ---------------------------------------------------------------------------
+// Marker/Control Icons
+// ---------------------------------------------------------------------------
+
 const fireIcon = L.icon({
   iconUrl: '/static/icons/fire.png',
   iconSize: [40, 40],
@@ -49,21 +62,28 @@ const clearAllIcon = L.icon({
 });
 const circleIcon = L.icon({
   iconUrl: '/static/icons/circle.png',
-  iconSize: [16, 16],      // adjust size as needed
-  iconAnchor: [8, 8],      // center the icon properly
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
   popupAnchor: [0, -8]
 });
 const gMarkerIcon = L.icon({
   iconUrl: '/static/icons/generic_marker.png',
-  iconSize: [50, 50],      
-  iconAnchor: [25, 25],    
+  iconSize: [50, 50],
+  iconAnchor: [25, 25],
   popupAnchor: [0, -25]
 });
+
+// ---------------------------------------------------------------------------
+// Layer selection state tracking
+// ---------------------------------------------------------------------------
 
 let selectedLayer = null;
 let selectedWaypoints = [];
 
-// Clear selection including polyline and linked waypoint circles
+// ---------------------------------------------------------------------------
+// Clear selection utility
+// ---------------------------------------------------------------------------
+
 function clearSelection() {
   if (selectedLayer) {
     if (selectedLayer._icon) {
@@ -88,7 +108,10 @@ function clearSelection() {
   }
 }
 
-// When selecting a layer
+// ---------------------------------------------------------------------------
+// Handle layer selection (markers, shapes, polylines)
+// ---------------------------------------------------------------------------
+
 function layerSelection(e) {
   clearSelection();
   selectedLayer = e.layer;
@@ -114,7 +137,10 @@ function layerSelection(e) {
 }
 
 
-// Clear selection when clicking on the map but not on any layer
+// ---------------------------------------------------------------------------
+// Deselect on map click
+// ---------------------------------------------------------------------------
+
 map.on('click', function (e) {
   clearSelection();
 });
@@ -123,16 +149,22 @@ drawnItems.on('click', function (e) {
   layerSelection(e);
 });
 
+// ---------------------------------------------------------------------------
+// Custom vertical control panel
+// ---------------------------------------------------------------------------
+
 const VerticalControl = L.Control.extend({
   onAdd: function (map) {
     const container = L.DomUtil.create('div', 'vertical-control leaflet-bar');
 
-    // Controls array uses L.icon for all
+    // -----------------------------------------------------------------------
+    // Control Buttons (Fire, Drone, Area, etc.)
+    // -----------------------------------------------------------------------
     const controls = [
       { name: 'Fire', icon: fireIcon, type: 'marker' },
       { name: 'Drone', icon: droneIcon, type: 'marker' },
       { name: 'Fire station', icon: fire_stationIcon, type: 'marker' },
-      { name: 'Generic POI', icon: gMarkerIcon, type: 'marker'},
+      { name: 'Generic POI', icon: gMarkerIcon, type: 'marker' },
       { name: 'Area', icon: areaIcon, type: 'area' },
       { name: 'Clear', icon: clearIcon, type: 'clear' },
       { name: 'Clear All', icon: clearAllIcon, type: 'clearAll' }
@@ -174,7 +206,9 @@ const VerticalControl = L.Control.extend({
       btn.onclick = (e) => {
         e.stopPropagation();
         cancelDrawing();
-
+        // -------------------------------------------------------------------
+        // Marker Placement Logic
+        // -------------------------------------------------------------------
         if (type === 'marker') {
           clearSelection();
           currentDrawHandler = new L.Draw.Marker(map, { icon });
@@ -273,6 +307,9 @@ const VerticalControl = L.Control.extend({
 
           addCancelOnEscape();
         }
+        // -------------------------------------------------------------------
+        // Area Drawing Logic
+        // -------------------------------------------------------------------
         else if (type === 'area') {
           clearSelection();
           currentDrawHandler = new L.Draw.Rectangle(map, {
@@ -377,6 +414,9 @@ const VerticalControl = L.Control.extend({
 
           addCancelOnEscape();
         }
+        // -------------------------------------------------------------------
+        // Clear Selected Layer
+        // -------------------------------------------------------------------
         else if (type === 'clear') {
           if (selectedLayer) {
             drawnItems.removeLayer(selectedLayer);
@@ -401,6 +441,9 @@ const VerticalControl = L.Control.extend({
               .openOn(map);
           }
         }
+        // -------------------------------------------------------------------
+        // Clear All Layers
+        // -------------------------------------------------------------------
         else if (type === 'clearAll') {
           drawnItems.clearLayers();
           selectedLayer = null;
@@ -417,6 +460,10 @@ const VerticalControl = L.Control.extend({
   }
 });
 
+// ---------------------------------------------------------------------------
+// Add vertical control to map
+// ---------------------------------------------------------------------------
+
 const customControl = new VerticalControl();
 map.whenReady(() => {
   customControl.addTo(map);
@@ -426,8 +473,10 @@ map.whenReady(() => {
   }
 });
 
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
+// ---------------------------------------------------------------------------
+// Extract Markers & Areas for Export
+// ---------------------------------------------------------------------------
+
 function extract_map_features_post() {
   const marker = [];
   const rectangle = [];
@@ -478,7 +527,11 @@ function extract_map_features_post() {
 
   return { rectangle, marker }
 }
-//////////////////////////////////////////////////////////////
+
+// ---------------------------------------------------------------------------
+// Draw Waypoint Path (Polyline + Circles)
+// ---------------------------------------------------------------------------
+
 function drawWaypointPath(coordsArray) {
   if (!Array.isArray(coordsArray) || coordsArray.length < 2) {
     console.error("Need at least two coordinates to draw a waypoint path.");
