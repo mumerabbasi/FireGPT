@@ -53,6 +53,12 @@ const circleIcon = L.icon({
   iconAnchor: [8, 8],      // center the icon properly
   popupAnchor: [0, -8]
 });
+const gMarkerIcon = L.icon({
+  iconUrl: '/static/icons/generic_marker.png',
+  iconSize: [50, 50],      
+  iconAnchor: [25, 25],    
+  popupAnchor: [0, -25]
+});
 
 let selectedLayer = null;
 let selectedWaypoints = [];
@@ -126,6 +132,7 @@ const VerticalControl = L.Control.extend({
       { name: 'Fire', icon: fireIcon, type: 'marker' },
       { name: 'Drone', icon: droneIcon, type: 'marker' },
       { name: 'Fire station', icon: fire_stationIcon, type: 'marker' },
+      { name: 'Generic POI', icon: gMarkerIcon, type: 'marker'},
       { name: 'Area', icon: areaIcon, type: 'area' },
       { name: 'Clear', icon: clearIcon, type: 'clear' },
       { name: 'Clear All', icon: clearAllIcon, type: 'clearAll' }
@@ -136,6 +143,7 @@ const VerticalControl = L.Control.extend({
       Fire: 1,
       Drone: 1,
       'Fire station': 1,
+      'Generic POI': 1,
       Area: 1
     };
 
