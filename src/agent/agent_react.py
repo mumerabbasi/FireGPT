@@ -42,7 +42,7 @@ MCP_SERVERS = {
 }
 
 OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
-OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen3:32b")
+OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen3:8b")
 
 # -----------------------------------------------------------
 # Demo geometry (will be injected by GUI later)
