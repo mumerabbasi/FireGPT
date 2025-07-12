@@ -89,15 +89,28 @@ async function sendMessage() {
 
   const text = chatInput.value.trim();
   const images = Array.from(imageInput.files);
+  let assistant_replay = null;
 
   // Show user message in UI
-  if (text) appendMessage(text, 'user');
-
-  for (const img of images) {
-    const reader = new FileReader();
-    reader.onload = e => appendImage(e.target.result, 'user');
-    reader.readAsDataURL(img);
+  if (images.length === 0){
+    if (text) appendMessage(text, 'user');
   }
+
+for (let i = 0; i < images.length; i++) {
+  const img = images[i];
+  const reader = new FileReader();
+
+  reader.onload = ((index) => (e) => {
+    appendImage(e.target.result, 'user');
+
+    if (index === images.length - 1) {
+      if (text) appendMessage(text, 'user');
+      assistant_replay = appendMessage(`<span class="typing dots">Thinking</span>`, 'assistant');
+    }
+  })(i); // pass current index into a closure
+
+  reader.readAsDataURL(img);
+}
 
   // Get Map features
   const map_features = JSON.stringify(mapIframe.contentWindow.extract_map_features_post());
@@ -114,8 +127,10 @@ async function sendMessage() {
   previewArea.innerHTML = '';
   chatInput.style.height = 'auto';
 
-  // Thinking ... logic
-  const assistant_replay = appendMessage(`<span class="typing dots">Thinking</span>`, 'assistant');
+  if(images.length === 0){
+    // Thinking ... logic
+    assistant_replay = appendMessage(`<span class="typing dots">Thinking</span>`, 'assistant');
+  }
 
   // Fetch 
   try {
@@ -126,7 +141,9 @@ async function sendMessage() {
 
     const result = await response.json();
 
-    assistant_replay.remove(); // remove the thinking .. dev
+    if(assistant_replay !== null) {
+      assistant_replay.remove(); // remove the thinking .. dev
+    }
     
     if (response.ok) {
       if (result.reply) {
