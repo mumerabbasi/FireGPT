@@ -1,4 +1,4 @@
-const map = L.map('map').setView([45.5236, -122.6750], 13);
+const map = L.map('map').setView([48.137154, 11.576124], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -207,6 +207,7 @@ const VerticalControl = L.Control.extend({
                 <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
                 <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
                 <small>${coordInfo}</small><br>
+                <button type="submit" style="margin-top: 6px;">Save</button>
                 <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
               </form>
             `;
@@ -310,6 +311,7 @@ const VerticalControl = L.Control.extend({
                 <label for="desc-input"><b>${label}</b> Description (optional):</label><br>
                 <textarea id="desc-input" rows="3" style="width: 100%; resize: vertical;"></textarea><br>
                 <small>${coordInfo}</small><br>
+                <button type="submit" style="margin-top: 6px;">Save</button>
                 <button type="button" id="cancel-btn" style="margin-left: 6px;">Cancel</button>
               </form>
             `;
