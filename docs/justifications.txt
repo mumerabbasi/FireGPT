@@ -1,0 +1,36 @@
+| No. | Document Title                                    | Country   | Use Type | Justification                                                                         |
+| --- | ------------------------------------------------- | --------- | -------- | ------------------------------------------------------------------------------------- |
+| 1   | **MAFFS Operating Plan (2025)**                   | USA       | Training | Detailed SOPs for U.S. military airborne firefighting; globally referenced.           |
+| 2   | **Standards for Airtanker Operations (2022)**     | USA       | Training | Tactical and safety guidelines for large airtanker use in wildfires.                  |
+| 3   | **NWCG Aerial Supervision Standards (PMS 505)**   | USA       | Training | Defines aerial command and coordination roles; essential for multi-aircraft response. |
+| 4   | **NWCG Airtanker Base Ops (PMS 508)**             | USA       | Training | Covers base logistics and resource deployment for airtanker operations.               |
+| 5   | **NWCG Helicopter Ops (PMS 510)**                 | USA       | Training | Helicopter-specific protocols add diversity in aerial tactics.                        |
+| 6   | **Federal Aerial Firefighting BRP Report (2002)** | USA       | Training | Evaluates systemic issues post-accidents; foundational for safety and effectiveness.  |
+| 7   | **Woolsey Fire AAR (2018)**                       | USA       | Test     | High-impact real-world case; showcases aerial-ground coordination challenges.         |
+| 8   | **California 2016 Fire Season AAR**               | USA       | Test     | Multi-incident review; useful for terrain/resource constraint modeling.               |
+| 9   | **NAFC Aerial Strategy (2021–26)**                | Australia | Training | National strategic plan; highlights Australian aerial doctrine.                       |
+| 10  | **ATSB Safety Review (2000–2020)**                | Australia | Training | Longitudinal study of aerial firefighting incidents; risk modeling source.            |
+| 11  | **Aerial Effectiveness Review – Part 1**          | Australia | Training | Empirical analysis of suppression impact; valuable for effectiveness modeling.        |
+| 12  | **Aerial Suppression Literature Review (2021)**   | Australia | Training | Research synthesis; meta-level overview of global tactics and findings.               |
+| 13  | **DFV Aerial Ops Guideline (2022)**               | Germany   | Training | Official German air ops standard; represents EU-style firefighting strategy.          |
+| 14  | **Graseck/Jochberg Incident Report**              | Germany   | Test     | Complex terrain wildfire case; localized, topographical diversity.                    |
+| 15  | **MSB Skogsbrandsläckning Guide (2022)**          | Sweden    | Training | Swedish tactical manual; adds Nordic forest conditions and suppression strategies.    |
+| 16  | **EFFIS Annual Report (2023)**                    | Europe    | Training | Cross-country statistics, weather impacts, and aerial response mapping.               |
+| 17  | **CIFFC Aviation Workshop (2023)**                | Canada    | Training | Interagency operational insights from Canada; adds transnational diversity.           |
+
+
+
+
+Organizational Share of Dataset (17 PDFs)
+
++--------------------------------------------------+
+|                                      
+|  Australian Agencies       █████████  23.5%  
+|  US Federal Agencies       ███████    17.6%  
+|  NWCG (USA)                ███████    17.6%  
+|  Cal Fire / LA County      █████      11.8%  
+|  Germany (DFV + Bavaria)   ██          11.8%  
+|  Sweden (MSB)              █           5.9%  
+|  EU (EFFIS)                █           5.9%  
+|  Canada (CIFFC)            █           5.9%  
++--------------------------------------------------+
