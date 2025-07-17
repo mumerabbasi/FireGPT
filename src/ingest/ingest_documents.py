@@ -48,7 +48,7 @@ CHUNK_OVERLAP = int(os.getenv("FGPT_CHUNK_OVERLAP", "128"))
 COLL_NAME = os.getenv("FGPT_COLLECTION", "fire_docs")
 
 # Embedding model path (local if available)
-_EMBED_MODEL = os.getenv("FGPT_EMBED_MODEL", "/root/fp/AMI/FireGPT/models/bge-base-en-v1.5")
+_EMBED_MODEL = os.getenv("FGPT_EMBED_MODEL", "../../models/bge-m3")
 _embedder = HuggingFaceEmbeddings(
     model_name=_EMBED_MODEL,
     model_kwargs={"local_files_only": True},
@@ -151,13 +151,29 @@ def build_persistent_store(source_dir: str | Path, target_dir: str | Path) -> Ch
     return store
 
 
-def build_session_store(files: Iterable[Path]) -> Chroma:
-    """Build an **in-memory** Chroma store for a one-off interactive session."""
-    docs: List[Document] = []
-    for path in files:
-        docs.extend(_load_documents(path.parent / path.name))
+session_store = None
 
-    return Chroma.from_documents(docs=_process_documents(docs), embedding=_embedder)
+
+def build_session_store(source_dir: str | Path) -> Chroma:
+    """Build an **in-memory** Chroma store for a one-off interactive session."""
+    """Create or update a **persistent** Chroma database from a directory of docs."""
+    global session_store
+    if session_store is None:
+        session_store = Chroma(
+            collection_name=COLL_NAME,
+            persist_directory=str("../../stores/session"),
+            embedding_function=_embedder,
+        )
+    src = Path(source_dir).expanduser().resolve()
+    raw_docs = _load_documents(src)
+    if not raw_docs:
+        raise FileNotFoundError(f"No supported documents found in {src}.")
+
+    processed = _process_documents(raw_docs)
+    session_store.add_documents(processed)
+    count = session_store._collection.count()
+    logger.info("Store ready with %d vectors", count)
+    return session_store
 
 
 # ----------------------------------------------------------------------------
@@ -167,8 +183,8 @@ def build_session_store(files: Iterable[Path]) -> Chroma:
 def _parse_args() -> argparse.Namespace:
     """CLI: define and parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Ingest documents into Chroma store.")
-    parser.add_argument("--source", default="docs/global", help="Directory with PDFs/docs")
-    parser.add_argument("--target", default="stores/global", help="Directory to hold Chroma DB")
+    parser.add_argument("--source", default="docs/local", help="Directory with PDFs/docs")
+    parser.add_argument("--target", default="stores/local", help="Directory to hold Chroma DB")
     parser.add_argument(
         "--overwrite", action="store_true", help="Delete the target directory before writing"
     )

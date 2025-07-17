@@ -224,7 +224,8 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
     destination = UPLOAD_DIR / file.filename
     destination.write_bytes(await file.read())
 
-    ingest.build_persistent_store(str(UPLOAD_DIR), str(STORE_DIR))
+    ingest.build_session_store(str(UPLOAD_DIR))
+    # ingest.build_session_store([destination])
     return {"filename": file.filename, "status": "uploaded"}
 
 
@@ -238,6 +239,7 @@ async def list_files() -> List[str]:
         raise HTTPException(status_code=500, detail="Could not list files") from exc
 
 
+# TODO: implement deleting collection from the vector store
 @app.delete("/delete/{filename}")
 async def delete_file(filename: str) -> dict[str, str]:
     """Delete a single upload by *filename*."""
@@ -251,14 +253,19 @@ async def delete_file(filename: str) -> dict[str, str]:
 
 
 @app.delete("/delete-all")
-async def delete_all_files() -> dict[str, List[str]]:
-    """Clear *UPLOAD_DIR* of **all** files (irreversible)."""
+async def delete_all_files():
+    deleted = []
+    for filename in os.listdir(UPLOAD_DIR):
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        os.remove(file_path)
+        deleted.append(filename)
 
-    deleted: List[str] = []
-    for path in UPLOAD_DIR.iterdir():
-        if path.is_file():
-            path.unlink()
-            deleted.append(path.name)
+    # Delete all session directories
+    for d in SESSION_DIRS:
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+        d.mkdir(parents=True, exist_ok=True)  # fresh, empty dir
+
     return {"status": "all_deleted", "files": deleted}
 
 
@@ -306,13 +313,7 @@ async def send_chat(
 
 @app.on_event("startup")
 async def _startup() -> None:  # noqa: D401
-    """Reset per-session folders and boot the agent."""
-    # Ensure all session directories exist and are empty
-    for d in SESSION_DIRS:
-        if d.exists():
-            shutil.rmtree(d, ignore_errors=True)
-        d.mkdir(parents=True, exist_ok=True)  # fresh, empty dir
-
+    """Boot the agent."""
     # Initialize the agent graph and thread ID
     app.state.graph = await agent_react.compile_graph()
     app.state.thread_id = f"fire-session-{uuid.uuid4()}"
@@ -327,3 +328,13 @@ async def _startup() -> None:  # noqa: D401
         openai_api_key="unused",
         model_kwargs={"tool_choice": "any"},
     )
+
+
+@app.on_event("shutdown")
+async def shutdown() -> None:  # noqa: D401
+    """Reset session state and clean up directories."""
+    # Ensure all session directories exist and are empty
+    for d in SESSION_DIRS:
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+        d.mkdir(parents=True, exist_ok=True)  # fresh, empty dir

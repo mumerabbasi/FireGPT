@@ -38,8 +38,8 @@ DB_PATH_SESSION = Path(os.getenv("FGPT_DB_PATH_SESSION", "stores/session"))
 DB_PATH_LOCAL = Path(os.getenv("FGPT_DB_PATH_LOCAL", "stores/local"))
 DB_PATH_GLOBAL = Path(os.getenv("FGPT_DB_PATH_GLOBAL", "stores/global"))
 
-EMB_MODEL = Path(os.getenv("FGPT_EMBED_MODEL", "models/bge-base-en-v1.5"))
-RERANK_MODEL = Path(os.getenv("FGPT_RERANK_MODEL", "models/bge-reranker-base"))
+EMB_MODEL = Path(os.getenv("FGPT_EMBED_MODEL", "models/bge-m3"))
+RERANK_MODEL = Path(os.getenv("FGPT_RERANK_MODEL", "models/bge-reranker-v2-m3"))
 COLL_NAME = os.getenv("FGPT_COLLECTION", "fire_docs")
 CANDIDATE_K = int(os.getenv("FGPT_CANDIDATE_K", "50"))
 TOP_K = int(os.getenv("FGPT_TOP_K", "5"))
@@ -61,6 +61,7 @@ client = FireGEE(base_url="https://api.firefirefire.lol")
 
 # Embedding model
 LOG.info("Loading embeddings from %s …", EMB_MODEL)
+LOG.info("Loading reranker from %s …", RERANK_MODEL)
 _embedder = HuggingFaceEmbeddings(model_name=str(EMB_MODEL), model_kwargs={"local_files_only": True})
 
 # Reranker model
@@ -159,6 +160,7 @@ def retrieve_chunks_session(
     """
     docs = _retriever_session.invoke(query)
     hits: List[DocHit] = []
+    logging.info(f"Retrieved {len(docs)} chunks from session store.")
     for doc in docs:
         meta = doc.metadata or {}
         hits.append(
@@ -191,6 +193,7 @@ def retrieve_chunks_local(
     """
     docs = _retriever_local.invoke(query)
     hits: List[DocHit] = []
+    logging.info(f"Retrieved {len(docs)} chunks from local store.")
     for doc in docs:
         meta = doc.metadata or {}
         hits.append(
@@ -223,6 +226,7 @@ def retrieve_chunks_global(
     """
     docs = _retriever_global.invoke(query)
     hits: List[DocHit] = []
+    logging.info(f"Retrieved {len(docs)} chunks from global store.")
     for doc in docs:
         meta = doc.metadata or {}
         hits.append(
