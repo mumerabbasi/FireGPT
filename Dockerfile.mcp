@@ -1,0 +1,42 @@
+# syntax = docker/dockerfile:1.4 # Add this line at the very top!
+FROM ami-base:latest as base
+
+# Activate the Conda environment for subsequent RUN commands
+# This changes the shell to use the new environment by default for following RUNs
+# SHELL ["conda", "run", "-n", "ami", "/bin/bash", "-c"]
+
+# Copy your application code
+COPY ./src/ /app/
+
+# --- Hugging Face Model Downloads (Moved to host + volume mount) ---
+# Create the models directory inside the container (empty mount point)
+RUN mkdir -p /app/mcp/models
+# No more HF_TOKEN or huggingface-cli downloads here
+
+# --- End Hugging Face Model Downloads ---
+
+# ENVIRONMENT VARIABLES (Set for the entire container)
+ENV FGPT_DB_PATH_SESSION=stores/session
+ENV FGPT_DB_PATH_LOCAL=stores/local
+ENV FGPT_DB_PATH_GLOBAL=stores/global
+
+# These should now point to the mounted location within the container
+ENV FGPT_EMBED_MODEL=/app/mcp/models/bge-m3
+ENV FGPT_RERANK_MODEL=/app/mcp/models/bge-reranker-v2-m3
+ENV FGPT_COLLECTION=fire_docs
+ENV CANDIDATE_K=50
+ENV FGPT_TOP_K=5
+
+ENV FGPT_HOST=0.0.0.0
+ENV FGPT_PORT=7790
+ENV ANOTHER_PORT=7791
+
+# Expose all ports your servers will listen on
+EXPOSE $FGPT_PORT
+EXPOSE $ANOTHER_PORT
+
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app/mcp
+
+ENTRYPOINT conda run --no-capture-output  -n ami python -u mcp_server.py

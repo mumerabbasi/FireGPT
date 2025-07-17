@@ -40,8 +40,9 @@ MCP_SERVERS = {
         "transport": "streamable_http",
     }
 }
-
+print("MCP_SERVERS:", MCP_SERVERS)
 OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
+print("OPENAI_BASE:", OPENAI_BASE)
 OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen3:8b")
 
 # -----------------------------------------------------------

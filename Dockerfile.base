@@ -1,0 +1,16 @@
+# syntax = docker/dockerfile:1.4 # Add this line at the very top!
+
+# Use a Miniconda base image for easier Conda integration
+FROM continuumio/miniconda3:latest as condabase
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Create the log directory for supervisord
+RUN mkdir -p /var/log/supervisor && chmod -R 777 /var/log/supervisor
+
+# Copy environment.yml and create the Conda environment
+COPY environment.yml .
+
+RUN --mount=type=cache,target=/opt/conda/pkgs \
+    conda env create -f environment.yml

@@ -48,7 +48,7 @@ CHUNK_OVERLAP = int(os.getenv("FGPT_CHUNK_OVERLAP", "128"))
 COLL_NAME = os.getenv("FGPT_COLLECTION", "fire_docs")
 
 # Embedding model path (local if available)
-_EMBED_MODEL = os.getenv("FGPT_EMBED_MODEL", "/root/fp/AMI/FireGPT/models/bge-base-en-v1.5")
+_EMBED_MODEL = os.getenv("FGPT_EMBED_MODEL", "/app/mcp/models/bge-m3")
 _embedder = HuggingFaceEmbeddings(
     model_name=_EMBED_MODEL,
     model_kwargs={"local_files_only": True},
