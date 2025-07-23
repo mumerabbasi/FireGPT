@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Any, List, Optional, Tuple
 import shutil
 import base64
+import logging
+import uvicorn
+
 
 from fastapi import File, Form, HTTPException, UploadFile
 from fastapi import FastAPI
@@ -38,7 +41,7 @@ import ingest_documents as ingest  # type: ignore  # noqa: E402
 # Directories & configuration
 # ---------------------------------------------------------------------------
 
-BASE_DIR = Path("/root/fp/AMI/FireGPT")
+BASE_DIR = Path(os.getcwd()).resolve()
 UPLOAD_DIR = BASE_DIR / "docs/session"
 STORE_DIR = BASE_DIR / "stores/session"
 CHAT_IMAGE_DIR = BASE_DIR / "chat_images"
@@ -46,22 +49,35 @@ SESSION_DIRS = (UPLOAD_DIR, STORE_DIR, CHAT_IMAGE_DIR)
 FRONTEND_DIR = Path("../frontend")
 
 # Vision Language Model API Configuration
-OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
+OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://host.docker.internal:11434/v1")
 OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen2.5vl")
+
+# # Logging Configuration
+# logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
+# LOG = logging.getLogger("uvicorn.error")
+
+# # Create a stream handler that writes to stdout/stderr
+# handler = logging.StreamHandler(sys.stderr) # or sys.stderr
+# formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+# handler.setFormatter(formatter)
+# LOG.addHandler(handler)
+
+
 # ---------------------------------------------------------------------------
 # Application setup
 # ---------------------------------------------------------------------------
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # TODO: restrict in production
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 
 # ---------------------------------------------------------------------------
 # Helpers

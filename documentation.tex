@@ -1,0 +1,671 @@
+%================================================================================
+%=============================== DOCUMENT SETUP =================================
+%================================================================================
+
+\documentclass[lang=english,inputenc=utf8,fontsize=10pt]{ldvarticle}
+%PACKAGES
+
+\usepackage{parskip}
+\usepackage{subfigure}
+\usepackage{ifthen}
+\usepackage{comment}
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{soul}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
+\usepackage{tabularx}
+\usepackage{lipsum}
+\usepackage{graphicx}   
+\usepackage{caption}  
+\usepackage{cleveref}
+
+\definecolor{lightgray}{rgb}{0.75,0.75,0.75}
+
+
+%================================================================================
+%================================= TITLE PAGE ===================================
+%================================================================================
+
+\title{Multi-modal RAG Implementation: FireGPT}
+\subtitle{Project report}
+\author{Muhammad Umer Abbasi\\
+03781272
+\and
+Kesava Prasad\\
+11223344
+\and
+Naqash Naveed\\
+22334455
+\and
+Safi Majid\\
+33445566
+}
+
+\date{\today}
+
+\begin{document}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\hrule
+
+\section*{Motivation}
+
+[This section is about introduction, motivation and context.] 
+
+\lipsum[2-3]
+
+\vspace*{1cm}
+\hrule
+
+\newpage
+
+\section{Project Description}
+
+A modern, web‑based UI hosted with FastAPI allows users to submit queries, upload images and documents, and interact with a map.
+
+\section*{Goals}
+[What goal/propose did you want to achieve/How did you translate the problem description in to specific (design) goals?] 
+
+One of the primary goals was to deliver a modern, easy to navigate user interface that would feel instantly familiar to anyone who had used ChatGPT or any other chatbot powered by a large language model.
+The Inspiration was drawn from Google NotebookLM because its session based document workflow matched our need to load and reference multiple PDF files during a chat.
+Since spatial context is critical in fire fighting and directly affects path finding and terrain assessment, an interactive map was planned to remain visible at all times. The map would let users add geospatial inputs such as fire locations, drone positions and other points of interest, and it would display system generated routes and other location specific outputs. \Cref{fig:UIBlock} visualizes the look and feel we set out to achieve.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{img/UI Layout.png}
+    \caption{Conceptual user‑interface mock‑up showing the desired three‑pane layout}
+    \label{fig:UIBlock}
+\end{figure}
+
+
+\section*{Assumptions}
+[What assumptions did you make in your design?] 
+
+\lipsum[5]
+
+\newpage
+
+\section{Data}
+[This section is all about the data you used.] 
+
+\lipsum[2]
+
+\section*{Sources}
+[What data did you use? Why did you choose these data sources? How did you obtain them?] 
+
+\lipsum[6]
+
+\section*{Preprocessing}
+[Describe any preprocessing (if done outside of the system).] 
+
+\lipsum[8]
+
+\newpage
+
+\section{System Description}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/system_overview.png}
+  \caption{High-level system overview of FireGPT, illustrating major blocks.}
+  \label{fig:system_overview}
+\end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/frontend.png}
+  \caption{FireGPT front-end: users can upload documents, upload images, draw a
+           bounding box to provide geospatial context for a wildfire query, and mark different points of interests.}
+  \label{fig:frontend}
+\end{figure}
+
+FireGPT has 4 major blocks, as illustrated in ~\cref{fig:system_overview}.
+
+\textbf{Multimodal front-end.}
+As illustrated in ~\cref{fig:frontend}, users can submit
+SOPs, after-action reports, or other documents (PDF), aerial or ground
+imagery, a map-based fire perimeter, points of interest, and free-form
+natural-language questions in one unified interface.
+
+\textbf{AI back-end.}
+A vision-language ReAct agent processes the entire input bundle and
+streams back an answer in plain language.  When appropriate, it also emits
+a structured JSON payload of latitude–longitude waypoints for downstream
+visualisation or autonomous drone control.
+
+\textbf{Knowledge base.}
+To ensure its responses are grounded in authoritative sources, the agent
+executes a three-stage retrieval cascade: it searches the user’s own
+uploads first, then a region-level knowledge base, and finally a global
+repository.  
+
+\textbf{Fire assessment.}
+Throughout this workflow it can also invoke a fire-risk assessment
+tool scores terrain cells forest area type, wind, weather, historical forest loss,
+and proximity to critical infrastructure.
+
+From the user’s point of view, this means they can request anything from
+context-specific SOP excerpts and attack-plans to automatically
+generated drone flight paths and operating instructions, all without
+leaving the FireGPT interface.
+
+Although every component (document-ingestion pipeline, retrieval
+stack, and vision–language model) is multilingual by design, our systematic
+evaluation has so far focused on English material, with spot checks on
+German documents yielding comparable results.
+
+\section*{Architecture}
+\subsection*{Multimodal Front-end}
+The graphical interface shown in ~\cref{fig:frontend} is built with
+stand-alone JavaScript, HTML5, and CSS3.  It presents three coordinated
+input channels:
+
+\begin{itemize}
+  \item \textbf{Document drop-zone.} Users may drag-and-drop additional
+        PDFs (SOPs, incident reports, manufacturer manuals, \emph{etc.})
+        at \emph{any} point in the dialogue, allowing the system to ingest
+        new evidence on the fly.
+  \item \textbf{Image uploader.} The same panel accepts satellite tiles,
+        drone photographs, or hand-drawn sketches such as annotated attack
+        plans, widening the visual context available to the VLM agent.
+  \item \textbf{Interactive map canvas.} Powered by Leaflet and OpenStreetMap, 
+        the canvas lets users draw polygons or bounding boxes to
+        delineate a fire perimeter, drop markers for drone
+        take-off/landing and refill points, flag critical infrastructure
+        (e.g.\ hospitals), and attach free-text notes (``must
+        protect’’).  All geometry is exported as GeoJSON and passed to the
+        back-end unchanged, preserving spatial fidelity.
+\end{itemize}
+
+A chat bar anchors the layout, so natural-language queries, uploaded
+documents, images, and geospatial annotations flow into FireGPT as a
+single multimodal bundle.  The guiding design principle is minimal
+cognitive overhead: users interact with familiar map gestures, standard
+file uploads, and plain text, while the system quietly harmonises these
+modalities for the downstream Reason and Action (ReAct) agent.
+
+% -------------------------------------------------------------------------
+\subsection*{AI Back-end }
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/backend.png}
+  \caption{High-level back-end flow.  A vision–language captioner
+           (Qwen2.5-VL) turns the incoming image into text, which is
+           concatenated with the system prompt, user prompt, and
+           geospatial fire context before being handed to the ReAct agent.
+           The agent may call retrieval and fire-assessment tools via a
+           Model Context Protocol (MCP) server, then streams the final
+           response back to the front-end.}
+  \label{fig:backend}
+\end{figure}
+
+\paragraph{Backend Overview.}
+Our design draws on two external references: A survey on LLM-based multi-agent systems: workflow, infrastructure, and challenges\,\cite{Li2024SurveyLLMMAS} and OpenAI’s GPT-4.1 Prompting Guide\,\cite{OpenAICookbook2024}. Building on the guidelines distilled in these works, FireGPT integrates the following 
+major components, as illustrated in  ~\cref{fig:backend}:
+\begin{enumerate}
+  \item \textbf{Vision captioning.} Each uploaded image is first passed
+        through \texttt{Qwen2.5-VL} to produce a rich, structured caption.
+  \item \textbf{Message assembly.} The system prompt, user query, image
+        caption, and GeoJSON fire context are packed into a LangGraph
+        message list.
+  \item \textbf{ReAct reasoning.} The bundle is forwarded to a ReAct
+        agent (built with LangGraph) whose principal LLM is
+        \texttt{Qwen3-8B} running on an Ollama server.
+  \item \textbf{Tool invocation.} Guided by the ReAct loop, the agent
+        dynamically decides whether to:
+        \begin{itemize}
+          \item retrieve documents (session $\rightarrow$ regional
+                $\rightarrow$ global), or
+          \item call the fire-assessment tool using the provided fire context
+          for per-cell risk metrics.
+        \end{itemize}
+  \item \textbf{Response synthesis.} The agent merges tool outputs with
+        its own chain-of-thought and streams back a plain-language answer,
+        optionally accompanied by JSON waypoints.
+  \item \textbf{Response Parsing.} As we are using a reasoning model,
+        agent's responses includes it's own thoughts as well. So, we strip
+        off the the thoughts (anything inside <think> ... <\textbackslash think> tags),
+        parse the waypoints json, and send back clean response and waypoints
+        json to the GUI.
+\end{enumerate}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/backend_detailed.png}
+  \caption{Component view.  The Ollama server hosts the two Qwen models.
+           The ReAct agent contains a \emph{Reasoner} (LLM) and a
+           \emph{Tool Caller}.  All external tools live behind the MCP
+           server: three ChromaDB stores (session, regional, global) and
+           a fire-assessment micro-service.}
+  \label{fig:backend-detailed}
+\end{figure}
+
+\paragraph{Zoom into Major Subsystems.}
+~\Cref{fig:backend-detailed} zooms in on the three collaborating
+subsystems.  
+On the left, an Ollama inference node hosts both
+\texttt{Qwen3-8B} (text) and \texttt{Qwen2.5-VL} (vision) behind a single,
+low-latency HTTP endpoint.  
+In the centre, the ReAct agent splits into a Reasoner,
+which plans tool invocations, and a Tool-Caller, which executes the
+plan and feeds results back for further reasoning.  
+On the right, a Model Context Protocol (MCP) server exposes four
+stateless micro-services through one streaming API: a session-specific
+vector store, a regional knowledge base, a global knowledge base, and a fire-assessment engine.  
+Together these components give the agent immediate access to both
+authoritative documents and real-time risk analytics while keeping the
+overall latency close to that of a single LLM call.
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/system_prompt_opt.png}
+  \caption{Flowchart showing the optimization of scheme of system prompt.}
+  \label{fig:system-prompt-opt}
+\end{figure}
+
+\paragraph{System-prompt Optimisation Workflow.}
+Figure~\ref{fig:system-prompt-opt} visualises the human-in-the-loop
+procedure we followed to harden the FireGPT system prompt.  We began with
+an initial template and a hand-labelled set of twenty representative
+queries paired with “gold” answers.
+The labelled set was stratified into train, dev, and
+test splits so that prompt edits could be scored on held-out data.
+Using the training portion, we iteratively rewrote the template by adjusting
+role instructions, tool-call format cues, and safety constraints, until the
+dev split reached a satisfactory success rate.  Finally, we estimated the prompt’s
+true performance on the untouched test split.
+
+
+
+\subsection*{Knowledge Base}
+We built a hierarchical knowledge base, comprising of region-level document,
+global-level documents and session level documents. Global and regional corpora are pre-embedded with the
+\texttt{BAAI/bge-m3} model, enabling multilingual search out of the box.
+FireGPT ships with those two corpora and a session store is created
+on-the-fly as users upload new PDFs.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/retrieval_reranking.png}
+  \caption{Two-stage retrieval pipeline.  An embedding search over
+           ChromaDB fetches the top--20 candidates, which are reranked by
+           the reranker, returning the five highest-scoring
+           chunks to the agent.}
+  \label{fig:retrieval}
+\end{figure}
+
+~\Cref{fig:retrieval} highlights the retrieval stack:
+
+\begin{itemize}
+  \item \textbf{Stage 1 – Dense retrieval.}  User queries are embedded
+        with \texttt{bge-m3} and compared against vector stores in
+        ChromaDB, producing 20 candidate chunks.
+  \item \textbf{Stage 2 – Cross-encoder reranking.}  The candidates are
+        re-scored by \texttt{bge-reranker-v2-m3} and the top five are supplied
+        to the ReAct agent.
+\end{itemize}
+
+This pipeline keeps latency low while maintaining semantic accuracy across
+languages. Although formal evaluation has concentrated on English, but the
+spot checks on German showed comparable performance.
+
+\subsection*{Fire Assessment}
+The Forest Fire Danger Assessment API is a Python-based web service built with FastAPI, designed to provide near real-time fire danger assessments for specified geographical areas. It leverages geospatial data from Google Earth Engine (GEE) and Point of Interest (POI) data from OpenStreetMap (OSM) via the Overpass API. The system divides a given bounding box into smaller subgrids, fetches various environmental and meteorological parameters for each, calculates a simplified fire danger score, and identifies key POIs relevant for emergency response and public safety.
+
+
+\section*{Prompt‐to‐Answer Workflow}
+~\Cref{fig:backend} illustrates the life-cycle of a
+single user request:
+
+\begin{enumerate}
+  \item \textbf{Input bundling.}  
+        GUI uploads a document which is ingested into the session store
+        asynchronously. Then, GUI transmits a single JSON payload that contains
+        images, the natural-language query, and/or geospatial context (fire 
+        perimeter and POI markers in GeoJSON).
+  \item \textbf{Vision captioning.}  
+        Each image is routed through \texttt{Qwen2.5-VL} (served via
+        Ollama) to obtain a structured and detailed textual caption.
+  \item \textbf{Message assembly.}  
+        The system prompt, user query, image caption(s), and GeoJSON are
+        concatenated into a LangGraph message list and forwarded to the
+        ReAct agent.
+  \item \textbf{Tool-aware reasoning.}  
+        Powered by \texttt{Qwen3-8B}, the agent enters the ReAct loop and
+        decides in real time whether to  
+        \begin{itemize}
+          \item retrieve documents—first from the \emph{session} store,
+                then the \emph{regional} store, and finally the
+                \emph{global} store, and/or
+          \item call the fire-assessment service using fire perimeter for per-cell risk,
+                weather, fuel, and proximity metrics.
+        \end{itemize}
+        All tool calls are executed through the MCP server and streamed
+        back to the agent for further reasoning.
+  \item \textbf{Response synthesis.}  
+        The agent fuses tool outputs with its own chain-of-thought and
+        drafts a reply that may include a JSON block of latitude–longitude
+        waypoints (e.g., drone flight paths).
+  \item \textbf{Post-processing and rendering.}  
+        Before the answer reaches the front-end, any internal
+        \texttt{\textless think\textgreater …\textless/think\textgreater}
+        segments are stripped, the waypoint JSON is parsed, and the GUI
+        receives a clean textual response plus map-ready overlays that are
+        immediately plotted on the interactive canvas.
+\end{enumerate}
+
+\section*{Model Suite and Rationale}
+
+FireGPT assembles four open-weights models, each chosen to excel at a
+distinct link in the chain from raw field data to grounded advice:
+reasoning and tool-use planning,
+vision captioning to textualise imagery for the agent,
+multilingual dense retrieval across heterogeneous document sources, and
+precision reranking so the agent reasons over the right text.
+
+% ----- Qwen3 benchmarks figure -----
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/qwen3_benchmarks.jpg}
+  \caption{Representative benchmark results published by Alibaba Cloud.
+           Larger Qwen3 checkpoints (30B illustrated) consistently lead
+           on multi-task reasoning suites versus Gemma, DeepSeek, and
+           closed models such as GPT-4o in the reported comparisons.
+           We deploy the 8B variant for a latency/VRAM trade-off while
+           retaining strong reasoning behaviour.}
+  \url{https://qwenlm.github.io/blog/qwen3/}
+  \label{fig:qwen3-benchmarks}
+\end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/qwen2.5vl_benchmark.png}
+  \caption{Representative benchmark results published by Alibaba Cloud.
+           Larger Qwen2.5vl checkpoints (32 and 72B illustrated) consistently
+           outperforming GPT-4o and matching or exceeding Gemini-2 Flash across multimodal, 
+           document-QA, reasoning, math, and video benchmarks.}
+  \label{fig:qwen2.5vl-benchmarks}
+  \url{https://github.com/QwenLM/Qwen2.5-VL}
+\end{figure}
+
+\paragraph{Qwen3-8B (primary reasoning \& tool planner).}
+We selected Qwen3-8B as the agent’s core LLM for three reasons.
+First, headroom: its larger sibling (30B) tops published
+reasoning, math, and instruction-following benchmarks (see
+~\cref{fig:qwen3-benchmarks}), and that capability transfers well to
+smaller sizes in the same family (empirically, we observed similar tool
+selection patterns across 30B$\rightarrow$8B downscaling).
+Second, controllability: Qwen3 uniquely exposes a
+\texttt{think} / \texttt{fast} execution toggle, allowing FireGPT to dial
+up structured chain-of-thought when the agent must plan multi-step tool
+calls (e.g., retrieve$\rightarrow$assess$\rightarrow$summarise), and dial
+it down for rapid chat-style follow-ups.
+Third, robustness in practice: in our internal dry-runs the model
+generated well-formed JSON tool arguments far more reliably than
+\texttt{mistral-7b-instruct-v0.3}, which frequently omitted required
+fields. Together these factors made Qwen3-8B the best balance of reasoning
+power, tool-API reliability, permissive licensing, and ~8\,GB-class
+hardware footprint.
+
+\paragraph{Qwen2.5-VL (vision captioner).}
+We chose Qwen2.5vl (7B) as our vision captioner because its larger 
+siblings outperforms other state-of-the-art models across a number of benchmarks
+(~\cref{fig:qwen2.5vl-benchmarks}). While Qwen2.5-VL is a capable multimodal LLM, 
+~\cref{fig:qwen3-benchmarks} shows that text reasoning in the newer Qwen3 line outperforms it by a wide
+margin (30B vs.\ 72B illustrated). We therefore adopt a
+specialisation strategy: Qwen2.5-VL (7B checkpoint) is used solely
+to convert uploaded satellite/drone imagery and user plans/sketches into rich
+captions that the Qwen3-8B reasoner can ingest as text. This split keeps
+caption latency low and concentrates scarce GPU memory where sophisticated
+tool reasoning is needed most. (Once \texttt{Qwen3-VL} is publicly
+available, we plan to collapse to a single multimodal checkpoint.)
+
+% ----- bge-m3 embedding benchmarks figure -----
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/bgem3_benchmarks.png}
+  \caption{Embedding model comparison (selected multilingual MTEB-style
+           tasks).  \texttt{bge-m3} leads or matches state-of-the-art
+           multilingual encoders while producing compact 768-d vectors,
+           making it well-suited for large mixed-language corpora.}
+  \label{fig:bgem3-benchmarks}
+  \url{https://huggingface.co/BAAI/bge-m3}
+\end{figure}
+
+\paragraph{BAAI/bge-m3 (multilingual embeddings).}
+Wildfire operations span jurisdictions; SOPs, situation reports, and
+equipment manuals appear in multiple languages (English, Spanish, German,
+\ldots). The \texttt{bge-m3} embedding model offers strong
+cross-lingual semantic alignment (~\cref{fig:bgem3-benchmarks}),
+letting a single query retrieve relevant passages regardless of source
+language. Its 768-dimensional output keeps ChromaDB storage compact and
+accelerates approximate nearest-neighbour search, which matters when
+session uploads grow mid-incident.
+
+% ----- bge reranker benchmarks figure -----
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{img/bgem3_reranker_benchmarks.png}
+  \caption{Retrieval ablation.  Adding the multilingual
+           \texttt{bge-reranker-v2-m3} cross-encoder boosts both
+           hit rate and MRR over pure dense retrieval.}
+  \label{fig:bgem3-reranker}
+  \url{https://huggingface.co/BAAI/bge-reranker-v2-m3}
+\end{figure}
+
+\paragraph{BAAI/bge-reranker-v2-m3 (cross-encoder reranking).}
+Dense retrieval alone returns a coarse candidate set; noisy or partially
+translated documents can surface near the top. We therefore rerank the
+top-$k$ (default $k=20$) candidates with the multilingual
+\texttt{bge-reranker-v2-m3} cross-encoder, which materially improves early
+precision (~\cref{fig:bgem3-reranker}). Higher-quality top-5 evidence
+reduces ``hallucinated SOP'' failure modes and shortens the ReAct loop,
+because the agent needs fewer follow-on retrieval calls to answer.
+
+\bigskip
+\noindent\textbf{Migration path.}
+When stable weights of \texttt{Qwen3-VL} are released,
+FireGPT can replace the current two-model (Qwen3 + Qwen2.5-VL) stack with
+a unified multimodal checkpoint while retaining the bge retrieval pair for
+language coverage.
+
+
+
+\section*{Tools and Rationale}
+FireGPT treats external capabilities-document search and fire-risk analytics-as
+\emph{tools} served over a lightweight Model Context Protocol (MCP). All tool
+calls are planned by the ReAct agent in real time, an \textbf{agentic RAG} style
+that differs from classic RAG pipelines where context is pre-assembled by deterministic rules.
+
+\paragraph{Why agentic RAG?}
+\vspace{-0.2\baselineskip}
+\begin{itemize}
+  \item \textbf{Dynamic reasoning.}  Wildfire queries vary wildly
+        (``show me SOP section 7'', ``optimise this drone route'').  A
+        static top-$k$ context window either over-retains irrelevant text
+        or misses specialised material.  Letting the agent decide when, how often,
+        and with which query to retrieve (i.e., if retrieved docs are not good enough, 
+         agent's reasoner can optimize the query can retrieve again)
+         yields higher factual F\textsubscript{1}.
+  \item \textbf{Tool composability.}  The agent can chain tools—e.g.,
+        retrieve $\rightarrow$ fire-assess $\rightarrow$ retrieve
+        again—without hand-crafted orchestration, a pattern difficult to
+        express in traditional RAG pipelines.
+\end{itemize}
+
+\paragraph{Why MCP as the transport layer?}
+\vspace{-0.2\baselineskip}
+\begin{itemize}
+  \item \textbf{Uniform I/O.}  Every tool—retrieval or analytics—exposes the
+        same JSON-in/JSON-out stream API.  The agent code therefore never
+        changes when a tool is swapped or versioned.
+  \item \textbf{Language-agnostic services.}  MCP messages travel over plain
+        HTTP/2; tools can be written in Python, Rust, or even serverless
+        WASM without touching the core agent.
+  \item \textbf{Back-pressure \& observability.}  The protocol carries
+        token-level partial results and timing metadata, simplifying
+        timeout handling and real-time UX streaming.
+\end{itemize}
+
+\paragraph{Why three document stores (session, regional, global)?}
+\vspace{-0.2\baselineskip}
+\begin{itemize}
+  \item \textbf{Session store}.  Captures user-uploaded PDFs mid-incident;
+        freshness is paramount, so embeddings live in-memory for
+        sub-second updates.
+  \item \textbf{Regional store}.  Holds pre-ingested SOPs and historical
+        reports for the jurisdiction in which the fire occurs.  Keeps
+        answers grounded in locally approved doctrine (e.g., air-tanker
+        altitude limits differ between Canada and Spain).
+  \item \textbf{Global store}.  A long-tail fallback for rare queries
+        (``lithium-battery warehouse fire’’) where regional material is
+        thin.  The ReAct agent consults this tier only when previous
+        searches return low relevance scores, limiting noise.
+\end{itemize}
+
+This tiered design mirrors the cognitive hierarchy of an experienced
+fire-officer: start with the freshest incident data, expand to local
+practice, and finally consult global references only if needed.  Combined
+with the agentic loop, FireGPT answers remain both contextual and
+evidence-backed, without overwhelming the user or the GPU with
+unfiltered text.   \Cref{fig:retrieval} (p.~\pageref{fig:retrieval})
+illustrates the retrieval and reranking flow that underpins these stores.
+
+
+\paragraph{Why capture geospatial annotations?}
+Wildfire responders rarely know the exact perimeter at the moment they
+open FireGPT, yet they do know where to start looking.
+Allowing the user to draw a fire-region bounding box serves as an
+"uncertainty buffer’’—the agent can focus computation inside that window
+without risking an empty query or paying to tile an entire province.  
+Likewise, free-form \textbf{points of interest (POIs)} let crews encode
+local tac-intel that never appears in doctrine: emergent spot fires,
+preferred drone launch pads, refill ponds, fire-stations, or critical
+infrastructure such as hospitals.  Each marker carries an optional note
+(e.g., "must protect’’), giving the LLM a structured hook for
+prioritisation.
+
+\paragraph{How the agent uses the GeoJSON.}
+All user-drawn geometry is forwarded unmodified to the ReAct agent.
+Internally the agent:
+
+\begin{itemize}
+  \item feeds the boudning box to the \texttt{fire-assessment} tool,
+        which returns per-cell risk scores, wind vectors, fuel models, and
+        recent forest-loss data;
+  \item overlays user POIs onto the same grid so each cell knows what it
+        contains (fire front, drone pad, hospital, \ldots);
+  \item plans tool calls accordingly:
+        \begin{itemize}
+          \item retrieval—pull SOP passages relevant to high-risk
+                cell types (steep slopes, lithium storage);
+          \item reasoning—rank candidate drone waypoints that avoid
+                high-flame-length cells and honour "must protect"
+                POIs.
+        \end{itemize}
+\end{itemize}
+
+Because the assessment is grid-wise, the agent can iterate at human
+timescales: adjust the box, add a new POI, re-plan—no need to rerun a
+full-scene simulation.  The net effect is advice and flight paths that are
+operationally safe (avoid dangerous cells), doctrine-aligned
+(cite the correct SOP snippets), and task-relevant (respect user
+annotations), closing the loop between field knowledge and AI reasoning.
+
+
+\paragraph{Containerisation with Docker.}
+To ensure portability and simplify deployment, the entire FireGPT backend is containerised using Docker and orchestrated with Docker Compose. This setup modularises each component of the system into its own service, promoting a clean and maintainable architecture. The key services include:
+\begin{itemize}
+    \item \textbf{ami-backend:} A FastAPI service that hosts the main application logic, built from a base Conda environment to manage Python dependencies. It communicates with both the MCP and Ollama services.
+    \item \textbf{ami-mcp:} The Multi-Channel Proxy service, also based on the Conda environment, which handles specific model interactions and exposes its services.
+    \item \textbf{ollama:} An Ollama service that runs the large language models, configured to use GPU resources for optimal performance.
+\end{itemize}
+This multi-container application is defined in a \texttt{docker-compose.yml} file, which manages service discovery, networking, and volume mounts for models and data. Large Hugging Face models are managed outside the Docker images via volume mounts, reducing image size and allowing for easier model updates without rebuilding images. This containerised approach provides a robust and scalable environment for deploying the Forest Fire Danger Assessment API and its dependencies.
+
+
+\newpage
+
+\section{Results}
+The primary result of this project is a functional Forest Fire Danger Assessment API, a Python-based web service built with FastAPI. The API provides near real-time fire danger assessments for specified geographical areas by leveraging geospatial data from Google Earth Engine (GEE) and Point of Interest (POI) data from OpenStreetMap (OSM).
+
+The system's core functionality is exposed through the \texttt{/assess-fire-danger} endpoint. This endpoint accepts a geographical bounding box and other parameters, and returns a detailed assessment. The process involves:
+\begin{enumerate}
+    \item \textbf{Subgrid Processing:} The specified area is divided into smaller subgrids.
+    \item \textbf{Data Fetching:} For each subgrid, the system fetches various environmental and meteorological parameters from GEE, including forest cover, land cover, wind speed, temperature, and elevation.
+    \item \textbf{Danger Calculation:} A rule-based model calculates a fire danger score for each subgrid based on the fetched data. Factors like fuel availability, weather conditions, and topography are considered.
+    \item \textbf{POI Identification:} The system fetches relevant Points of Interest (e.g., hospitals, fire stations) from OpenStreetMap and determines their proximity to high-danger areas.
+\end{enumerate}
+The final output is a comprehensive JSON response containing the danger assessment for each subgrid and a list of key POIs with their relationship to the danger zones. This provides actionable intelligence for emergency response and public safety. The entire system is containerized using Docker for portability and scalability.
+
+\section*{Observations}
+Several key observations and design takeaways emerged during the development and containerization of the Forest Fire Danger Assessment API.
+
+\begin{itemize}
+    \item \textbf{Modular Architecture:} The separation of concerns into different Python modules (\texttt{main.py}, \texttt{data\_fetcher.py}, \texttt{fire\_model.py}, \texttt{poi\_fetcher.py}) and distinct Docker services (\texttt{ami-backend}, \texttt{ami-mcp}, \texttt{ollama}) proved to be a robust architectural choice. This modularity simplifies development, testing, and maintenance.
+    \item \textbf{Importance of Data Validation:} Using Pydantic models for API request and response validation was crucial for ensuring data integrity and providing clear error messages for invalid inputs. This is especially important for a system that deals with complex geospatial data.
+    \item \textbf{Efficient Model Management:} The strategy of using volume mounts for large Hugging Face and Ollama models, rather than embedding them in Docker images, is a critical practice. It significantly reduces image size, speeds up build times, and allows for independent updates of models without rebuilding the application images.
+    \item \textbf{Inter-Service Communication:} Docker Compose simplifies the networking between services. By defining service names and using environment variables, the backend can reliably communicate with the MCP and Ollama services, which is essential for the overall workflow.
+    \item \textbf{Handling External Service Dependencies:} The system's reliance on external APIs like Google Earth Engine and Overpass highlights the need for robust error handling and fallback mechanisms. For instance, the GFS data fetcher was designed to try a broader time range if data for a specific forecast hour is unavailable.
+\end{itemize}
+
+\section*{Trends}
+[Any trends/patterns you observed in the results?] 
+
+\lipsum[15]
+
+\newpage
+
+\section{Discussion}
+[Discuss the results in this sections.] 
+
+\lipsum[16]
+
+\section*{Interpretation of the Results}
+[Interpret your results with respect to the goals set. Did you reach the goals set out?] 
+
+\lipsum[8]
+
+\section*{Critical Assessment of the Results and Assumptions}
+[In light of your results, were your assumptions and other design decisions valid?] 
+
+\lipsum[17]
+
+Q
+\newpage
+
+\section{Conclusion}
+
+\lipsum[19]
+
+\section*{Summary of the Results}
+
+\lipsum[20]
+
+\section*{Future Work}
+While the current system provides a solid foundation for fire danger assessment, several areas could be enhanced with additional time and resources.
+\begin{itemize}
+    \item \textbf{GPU Acceleration:} The Docker Compose file includes commented-out configurations for enabling NVIDIA GPU access for the Ollama and MCP services. A key next step would be to fully implement and test this to significantly accelerate model inference, which is crucial for real-time performance.
+    \item \textbf{Advanced Fire Spread Model:} The current fire danger model is a simplified, rule-based system. Future work could involve integrating a more sophisticated, physics-based fire spread model (like FARSITE or its equivalents) to provide more accurate predictions of fire behavior over time.
+    \item \textbf{Integration of Alternative Backends:} The presence of \texttt{Dockerfile.gee.txt} suggests an alternative service implementation. This could be developed into a fully-fledged, independent microservice, perhaps for more specialized geospatial analysis, and integrated into the Docker Compose orchestration.
+    \item \textbf{Enhanced User Interface:} While the focus has been on the backend API, a more interactive and user-friendly frontend could be developed to better visualize the fire danger assessment, POIs, and potential fire spread, making the information more accessible to first responders.
+    \item \textbf{Comprehensive Testing and Validation:} The system would benefit from a more rigorous testing suite, including unit tests for each module, integration tests for the API endpoints, and validation of the fire danger model against historical fire data to assess its accuracy.
+\end{itemize}
+
+\newpage
+
+\section{Comments to the Group Work Experience}
+
+\lipsum[22]
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+\end{document}
+\end{document}

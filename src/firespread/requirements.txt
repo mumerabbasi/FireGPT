@@ -1,0 +1,8 @@
+# requirements.txt
+fastapi==0.111.0 # Or your current version
+uvicorn[standard]==0.30.1 # Or your current version
+earthengine-api==0.1.411 # Or your current version
+requests==2.32.3 # Or your current version
+geopy==2.4.1 # Or your current version
+pydantic==2.7.4 # Or your current version (ensure it matches your current Pydantic setup)
+# Add any other libraries you might have implicitly used

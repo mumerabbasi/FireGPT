@@ -28,18 +28,19 @@ from forest_fire_gee.models import (
 )
 from forest_fire_gee.api.default import assess_fire_danger_assess_fire_danger_post
 from forest_fire_gee.types import Response
-
+import sys
 # ----------------------------------------------------------------------------
 # Configuration & Logging
 # ----------------------------------------------------------------------------
-
+print("Loading FireGPT FastMCP server configuration...")
 # DB Paths and Configuration
 DB_PATH_SESSION = Path(os.getenv("FGPT_DB_PATH_SESSION", "stores/session"))
 DB_PATH_LOCAL = Path(os.getenv("FGPT_DB_PATH_LOCAL", "stores/local"))
 DB_PATH_GLOBAL = Path(os.getenv("FGPT_DB_PATH_GLOBAL", "stores/global"))
+os.environ['SENTENCE_TRANSFORMERS_HOME']="/app/mcp/models"
 
-EMB_MODEL = Path(os.getenv("FGPT_EMBED_MODEL", "models/bge-m3"))
-RERANK_MODEL = Path(os.getenv("FGPT_RERANK_MODEL", "models/bge-reranker-v2-m3"))
+EMB_MODEL = Path(os.getenv("FGPT_EMBED_MODEL", "/app/mcp/models/bge-m3"))
+RERANK_MODEL = Path(os.getenv("FGPT_RERANK_MODEL", "/app/mcp/models/bge-reranker-v2-m3"))
 COLL_NAME = os.getenv("FGPT_COLLECTION", "fire_docs")
 CANDIDATE_K = int(os.getenv("FGPT_CANDIDATE_K", "50"))
 TOP_K = int(os.getenv("FGPT_TOP_K", "5"))
@@ -52,23 +53,31 @@ PORT = int(os.getenv("FGPT_PORT", "7790"))
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
 LOG = logging.getLogger("firegpt.fastmcp")
 
+# Create a stream handler that writes to stdout/stderr
+handler = logging.StreamHandler(sys.stderr) # or sys.stderr
+formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+handler.setFormatter(formatter)
+LOG.addHandler(handler)
+
 # ----------------------------------------------------------------------------
 # External Clients & Vector Store
 # ----------------------------------------------------------------------------
 
 # FireGEE API client
-client = FireGEE(base_url="https://api.firefirefire.lol")
+fireGeeUrl = os.getenv("FIRESPREAD_API_URL", "https://api.firefirefire.lol")
+client = FireGEE(base_url=fireGeeUrl)
 
 # Embedding model
 LOG.info("Loading embeddings from %s …", EMB_MODEL)
-LOG.info("Loading reranker from %s …", RERANK_MODEL)
+# Set local path to the embedding model if available
+
+LOG.info("Using local embedding model at %s", EMB_MODEL)
 _embedder = HuggingFaceEmbeddings(model_name=str(EMB_MODEL), model_kwargs={"local_files_only": True})
 
 # Reranker model
 _cross_encoder = HuggingFaceCrossEncoder(
     model_name=str(RERANK_MODEL),
     model_kwargs={
-        "device": "cuda",
         "local_files_only": True,
     },
 )
@@ -262,9 +271,9 @@ def assess_fire_danger(
 
     Returns a json.
     """
-    subgrid_size_m: int = 250
+    subgrid_size_m: int = 50
     forecast_hours: int = 1
-    poi_search_buffer_m: int = 1000
+    poi_search_buffer_m: int = 200
     bbox = BoundingBox(
         top_left_lat=top_left_lat,
         top_left_lon=top_left_lon,
@@ -294,5 +303,6 @@ def assess_fire_danger(
 # ----------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    print("Starting FireGPT FastMCP server...")
     LOG.info("Starting FireGPT FastMCP server on %s:%d …", HOST, PORT)
     mcp.run(transport="streamable-http", host=HOST, port=PORT)

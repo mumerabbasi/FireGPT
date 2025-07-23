@@ -546,9 +546,12 @@ html[data-theme="dark"] .doc-item {
   margin-bottom: 10px;
   display: flex;
   align-items: flex-start; /* allow multi-line */
+  align-items: flex-start; /* allow multi-line */
   justify-content: space-between;
   background-color: var(--bg-tertiary);
   color: var(--text-light);
+  flex-wrap: wrap; /* allow wrapping */
+  word-break: break-word; /* break long words */
   flex-wrap: wrap; /* allow wrapping */
   word-break: break-word; /* break long words */
 }
@@ -560,6 +563,7 @@ html[data-theme="light"] .doc-item {
   padding: 8px 12px;
   margin-bottom: 10px;
   display: flex;
+  align-items: flex-start; /* allow multi-line */
   align-items: flex-start; /* allow multi-line */
   justify-content: space-between;
   background-color: var(--bg-tertiary);
@@ -577,8 +581,22 @@ html[data-theme="dark"] .doc-remove-btn {
   color: #d32f2f;
   cursor: pointer;
   font-size: 16px;
+  flex-wrap: wrap; /* allow wrapping */
+  word-break: break-word; /* break long words */
 }
 
+
+/* --- Default (Dark) Theme --- */
+html[data-theme="dark"] .doc-remove-btn {
+  margin-left: 10px;
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* --- Light Theme --- */
 /* --- Light Theme --- */
 html[data-theme="light"] .doc-remove-btn {
   margin-left: 10px;

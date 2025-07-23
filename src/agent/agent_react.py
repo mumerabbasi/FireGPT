@@ -88,9 +88,16 @@ BASE_RULES = (
         • *Conversation memory* - you CAN and SHOULD reference the full message list
         provided in the conversation state. Treat it as your short-term memory.
 
+
         • *Scope*
             - **Fire-related or SOP questions:** follow the domain-specific rules below.
             - **Other questions:** rely on your own background knowledge.
+            - **Fire-related or SOP questions:** follow the domain-specific rules below.
+            - **Other questions:** rely on your own background knowledge.
+
+        • *Tool Usage*
+            - Only call `assess_fire_danger(bbox)` once per fire bounding box.
+            - You can call other tools multiple times per turn, if needed.
 
         • *Tool Usage*
             - Only call `assess_fire_danger(bbox)` once per fire bounding box.
@@ -110,9 +117,16 @@ BASE_RULES = (
             documents. **Always query this first**.
 
         3. `retrieve_chunks_local(query)`
+        2. `retrieve_chunks_session(query)`
+            -> returns passages from user-given Standard Operating Procedures (SOPs).
+            documents. **Always query this first**.
+
+        3. `retrieve_chunks_local(query)`
             -> returns passages from jurisdiction-specific Standard Operating
             Procedures (SOPs). **Always query this second**.
+            Procedures (SOPs). **Always query this second**.
 
+        4. `retrieve_chunks_global(query)`
         4. `retrieve_chunks_global(query)`
             -> returns passages from global best-practice documents. Use only when
             local retrieval returns nothing relevant.
@@ -123,11 +137,21 @@ BASE_RULES = (
         A. **Fire Bounding box handling**
         • If the user supplies a fire bounding box (`bbox`), call
             `assess_fire_danger(bbox)` **only once** for that bbox.
+        • If the user supplies a fire bounding box (`bbox`), call
+            `assess_fire_danger(bbox)` **only once** for that bbox.
         • If the user does **not** supply a bbox in a later turn, assume the most
+            recently obtained fire assessment is still valid.
             recently obtained fire assessment is still valid.
 
         B. **SOP retrieval & advice**
         • When the user asks for SOPs, guidance, or strategy:
+            1. Query **`retrieve_chunks_session`** with a concise description of the
+                scenario (fuel type, wind, terrain, etc.). During the conversation, the user
+                can upload more documents, which will be added to the session store. So, always
+                query the session store first.
+            2. If no pertinent session passages are returned, query **`retrieve_chunks_local`**
+                with a concise description of the scenario (fuel type, wind, terrain, etc.).
+            3. If no pertinent local passages are returned, fall back to
             1. Query **`retrieve_chunks_session`** with a concise description of the
                 scenario (fuel type, wind, terrain, etc.). During the conversation, the user
                 can upload more documents, which will be added to the session store. So, always
@@ -146,6 +170,13 @@ BASE_RULES = (
             the following instructions to generate waypoints to perform the task effectively:
             * If you have a bounding box:
                 - Call `assess_fire_danger()` with bbox to get the context of fire region.
+            * Retrieve relevant SOPs and operational guides using `retrieve_chunks_session()`
+              and/or `retrieve_chunks_local()` and/or `retrieve_chunks_global()`.
+            * Reason about choosing waypoints based on the fire danger assessment (if fire
+            bbox is given), and retrieved SOPs.
+            * Provide a JSON **array** of **8-16** `[lat, lon]` pairs.
+            * If the user asks for the explanation of the waypoints, provide them in the text
+              as plain sentences.
             * Retrieve relevant SOPs and operational guides using `retrieve_chunks_session()`
               and/or `retrieve_chunks_local()` and/or `retrieve_chunks_global()`.
             * Reason about choosing waypoints based on the fire danger assessment (if fire
@@ -262,6 +293,7 @@ async def run_turn(
     )
     print("STATE----------------------")
     print(out)
+    print("STATE END------------------")
     print("STATE END------------------")
     reply = last_ai_message(out["messages"]).content
     return reply
