@@ -78,7 +78,6 @@ _embedder = HuggingFaceEmbeddings(model_name=str(EMB_MODEL), model_kwargs={"loca
 _cross_encoder = HuggingFaceCrossEncoder(
     model_name=str(RERANK_MODEL),
     model_kwargs={
-        "device": "cuda",
         "local_files_only": True,
     },
 )
@@ -269,9 +268,9 @@ def assess_fire_danger(
 
     Returns a json.
     """
-    subgrid_size_m: int = 250
+    subgrid_size_m: int = 50
     forecast_hours: int = 1
-    poi_search_buffer_m: int = 1000
+    poi_search_buffer_m: int = 200
     bbox = BoundingBox(
         top_left_lat=top_left_lat,
         top_left_lon=top_left_lon,

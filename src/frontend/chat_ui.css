@@ -539,19 +539,37 @@ html[data-theme="light"] .send-btn img {
 /*  For Source Docuemment buttons        */
 
 /* --- Default (Dark) Theme --- */
-/* --- Dark Theme (default) --- */
 html[data-theme="dark"] .doc-item {
   border: var(--bg-tertiary);
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 10px;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* allow multi-line */
   justify-content: space-between;
   background-color: var(--bg-tertiary);
   color: var(--text-light);
+  flex-wrap: wrap; /* allow wrapping */
+  word-break: break-word; /* break long words */
 }
 
+/* --- Light Theme --- */
+html[data-theme="light"] .doc-item {
+  border: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start; /* allow multi-line */
+  justify-content: space-between;
+  background-color: var(--bg-tertiary);
+  color: var(--text-light);
+  flex-wrap: wrap; /* allow wrapping */
+  word-break: break-word; /* break long words */
+}
+
+
+/* --- Default (Dark) Theme --- */
 html[data-theme="dark"] .doc-remove-btn {
   margin-left: 10px;
   background: none;
@@ -562,18 +580,6 @@ html[data-theme="dark"] .doc-remove-btn {
 }
 
 /* --- Light Theme --- */
-html[data-theme="light"] .doc-item {
-  border: var(--bg-tertiary);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--bg-tertiary);
-  color: var(--text-light);
-}
-
 html[data-theme="light"] .doc-remove-btn {
   margin-left: 10px;
   background: none;

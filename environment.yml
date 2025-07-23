@@ -245,6 +245,7 @@ dependencies:
       - posthog==5.4.0
       - propcache==0.3.2
       - protobuf==5.29.5
+      - pdfplumber
       - pyasn1==0.6.1
       - pyasn1-modules==0.4.2
       - pybase64==1.4.1

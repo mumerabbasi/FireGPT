@@ -90,14 +90,20 @@ async function sendMessage() {
   const text = chatInput.value.trim();
   const images = Array.from(imageInput.files);
 
-  // Show user message in UI
-  if (text) appendMessage(text, 'user');
+  // Map each image to a Promise that resolves when FileReader finishes
+  await Promise.all(images.map(img => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        appendImage(e.target.result, 'user');
+        resolve(); // image done
+      };
+      reader.readAsDataURL(img);
+    });
+  }));
 
-  for (const img of images) {
-    const reader = new FileReader();
-    reader.onload = e => appendImage(e.target.result, 'user');
-    reader.readAsDataURL(img);
-  }
+  // After all images are read:
+  if (text) appendMessage(text, 'user');
 
   // Get Map features
   const map_features = JSON.stringify(mapIframe.contentWindow.extract_map_features_post());
@@ -114,8 +120,7 @@ async function sendMessage() {
   previewArea.innerHTML = '';
   chatInput.style.height = 'auto';
 
-  // Thinking ... logic
-  // const assistant_replay = appendMessage(`<span class="typing dots">Thinking</span>`, 'assistant');
+  const assistant_replay = appendMessage(`<span class="typing dots">Thinking</span>`, 'assistant');
 
   // Fetch 
   try {
@@ -126,11 +131,9 @@ async function sendMessage() {
 
     const result = await response.json();
 
-    // assistant_replay.remove(); // remove the thinking .. dev
-    
     if (response.ok) {
       if (result.reply) {
-        appendMessage(result.reply,'assistant');
+        appendMessage(result.reply, 'assistant');
       }
       // Draw the pathList if any 
       if (result.pathList) {
@@ -146,6 +149,8 @@ async function sendMessage() {
     appendMessage("Network error", 'assistant');
   }
 
+  if(assistant_replay) assistant_replay.remove(); // remove the thinking .. dev
+  
   // Reset input UI
   chatInput.value = '';
   imageInput.value = '';
@@ -188,11 +193,26 @@ function changeMessage(msg_div, text) {
 function appendImage(src, role) {
   const msg = document.createElement('div');
   msg.className = `message ${role}`;
+
+  // Create a link element for Fancybox
+  const link = document.createElement('a');
+  link.href = src;
+  link.setAttribute('data-fancybox', 'gallery'); // Optional group name
+
+  // Create the image element
   const img = document.createElement('img');
   img.src = src;
-  msg.appendChild(img);
+  img.style.cursor = 'pointer';
+  img.style.maxWidth = '200px'; // optional: limit size in chat
+
+  // Append image to link, and link to the message
+  link.appendChild(img);
+  msg.appendChild(link);
+
+  // Append message to chat area
   messagesArea.appendChild(msg);
   messagesArea.scrollTop = messagesArea.scrollHeight;
+
 }
 
 // ---------------------------------------------------------------------------

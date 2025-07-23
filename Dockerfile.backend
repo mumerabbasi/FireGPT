@@ -1,9 +1,9 @@
 # syntax = docker/dockerfile:1.4 # Add this line at the very top!
-FROM ami-base:latest as base
+FROM kesava89/ami-base:latest as base
 
 # Activate the Conda environment for subsequent RUN commands
 # This changes the shell to use the new environment by default for following RUNs
-SHELL ["conda", "run", "-n", "ami", "/bin/bash", "-c"]
+# SHELL ["conda", "run", "-n", "ami", "/bin/bash", "-c"]
 
 # Copy your application code
 COPY ./src/ /app/
@@ -34,8 +34,8 @@ EXPOSE 8000
 
 # # Copy the supervisord configuration file
 # COPY supervisord.conf /etc/supervisord.conf
-
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app/backend
 
 # Command to run supervisord, which in turn runs your Python servers
-CMD ["conda", "run", "-n", "ami", "fastapi", "run", "main.py"]
+ENTRYPOINT conda run --no-capture-output -n ami python -u main.py

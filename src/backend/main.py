@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Any, List, Optional, Tuple
 import shutil
 import base64
+import logging
+import uvicorn
+
 
 from fastapi import File, Form, HTTPException, UploadFile
 from fastapi import FastAPI
@@ -48,6 +51,18 @@ FRONTEND_DIR = Path("../frontend")
 # Vision Language Model API Configuration
 OPENAI_BASE = os.getenv("OPENAI_API_BASE", "http://host.docker.internal:11434/v1")
 OPENAI_MODEL = os.getenv("FGPT_MODEL", "qwen2.5vl")
+
+# # Logging Configuration
+# logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(message)s")
+# LOG = logging.getLogger("uvicorn.error")
+
+# # Create a stream handler that writes to stdout/stderr
+# handler = logging.StreamHandler(sys.stderr) # or sys.stderr
+# formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+# handler.setFormatter(formatter)
+# LOG.addHandler(handler)
+
+
 # ---------------------------------------------------------------------------
 # Application setup
 # ---------------------------------------------------------------------------
@@ -225,7 +240,7 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
     destination = UPLOAD_DIR / file.filename
     destination.write_bytes(await file.read())
 
-    ingest.build_persistent_store(str(UPLOAD_DIR), str(STORE_DIR))
+    ingest.build_session_store(str(UPLOAD_DIR))
     return {"filename": file.filename, "status": "uploaded"}
 
 
@@ -252,15 +267,18 @@ async def delete_file(filename: str) -> dict[str, str]:
 
 
 @app.delete("/delete-all")
-async def delete_all_files() -> dict[str, List[str]]:
-    """Clear *UPLOAD_DIR* of **all** files (irreversible)."""
+async def delete_all_files():
+    deleted = []
+    for filename in os.listdir(UPLOAD_DIR):
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        os.remove(file_path)
+        deleted.append(filename)
 
-    deleted: List[str] = []
-    for path in UPLOAD_DIR.iterdir():
-        if path.is_file():
-            path.unlink()
-            deleted.append(path.name)
-    return {"status": "all_deleted", "files": deleted}
+    # Delete all session directories
+    for d in SESSION_DIRS:
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+        d.mkdir(parents=True, exist_ok=True)  # fresh, empty dir
 
 
 @app.post("/send-chat")
@@ -309,11 +327,7 @@ async def send_chat(
 async def _startup() -> None:  # noqa: D401
     """Reset per-session folders and boot the agent."""
     # Ensure all session directories exist and are empty
-    for d in SESSION_DIRS:
-        if d.exists():
-            shutil.rmtree(d, ignore_errors=True)
-        d.mkdir(parents=True, exist_ok=True)  # fresh, empty dir
-
+    """Boot the agent."""
     # Initialize the agent graph and thread ID
     app.state.graph = await agent_react.compile_graph()
     app.state.thread_id = f"fire-session-{uuid.uuid4()}"
@@ -328,3 +342,15 @@ async def _startup() -> None:  # noqa: D401
         openai_api_key="unused",
         model_kwargs={"tool_choice": "any"},
     )
+    
+@app.on_event("shutdown")
+async def shutdown() -> None:  # noqa: D401
+    """Reset session state and clean up directories."""
+    # Ensure all session directories exist and are empty
+    for d in SESSION_DIRS:
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+        d.mkdir(parents=True, exist_ok=True)  # fresh, empty dir
+
+if __name__ == '__main__':
+    uvicorn.run(app, log_level="trace", port=8000, host="0.0.0.0")

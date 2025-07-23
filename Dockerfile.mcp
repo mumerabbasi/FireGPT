@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1.4 # Add this line at the very top!
-FROM ami-base:latest as base
+FROM kesava89/ami-base:latest as base
 
 # Activate the Conda environment for subsequent RUN commands
 # This changes the shell to use the new environment by default for following RUNs

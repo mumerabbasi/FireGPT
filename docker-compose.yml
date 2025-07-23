@@ -19,41 +19,44 @@ services:
       # For example:
       # - OLLAMA_HOST=0.0.0.0
       - OLLAMA_DEBUG=${OLLAMA_DEBUG:-false} # Example placeholder
-    volumes:
+      - OLLAMA_CONTEXT_LENGTH=32768
+      - OLLAMA_NEW_ENGINE=true
+      # Set OLLAMA_GPU_OVERHEAD to 8 GB in bytes
       # Optional: Mount a volume for Ollama models persistence
       # - ollama_models:/root/.ollama
-      - /app/ollama_data:/root/.ollama # Example: Persist data in a local directory
+      - /app/ollama_data:/root/.ollama:ro # Example: Persist data in a local directory
       
 
   ami-mcp:
-    image: ami-mcp:latest
+    image: kesava89/ami-mcp:latest
     container_name: ami-mcp
     ports:
       - "7790:7790"
     volumes:
       - /app/mcp/models:/app/mcp/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
   ami-backend:
-    image: ami-backend:latest
+    image: kesava89/ami-backend:latest
     container_name: ami-backend
     ports:
       - "8000:8000"
     volumes:
       - /app/mcp/models:/app/mcp/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      - ./docs:/app/docs
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
     restart: always
     environment:
       - OPENAI_API_BASE=${OPENAI_API_BASE:-http://ollama:11434/v1} # Example placeholder
