@@ -1,0 +1,38 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11-bookworm
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install system dependencies required by Python packages (like geopy or requests' underlying libraries if any)
+# This step is crucial for geospatial libraries which often have C extensions.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file into the working directory
+COPY src/firespread/requirements.txt .
+
+# Install any needed Python packages specified in requirements.txt
+# Using --no-cache-dir to save space
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire 'fire_api' package into the container
+# Assuming your structure is 'your_project_root/fire_api/'
+COPY src/firespread /app/firespread
+
+# Expose the port your FastAPI application runs on (default is 8000)
+EXPOSE 8000
+
+# Define environment variable for Earth Engine credentials (if using service account JSON)
+# Replace with your actual path in the container if you're mounting it
+ENV EE_SERVICE_ACCOUNT_KEY=/app/firespread/ee-service-account.json
+COPY src/firespread/earth_engine_key.json /app/firespread/ee-service-account.json
+# You might want to remove this line if you handle authentication differently (e.g., via gcloud auth)
+
+# Command to run the application using Uvicorn
+# The --host 0.0.0.0 makes the server accessible from outside the container
+CMD ["uvicorn", "firespread.main:app", "--host", "0.0.0.0", "--port", "8000"]

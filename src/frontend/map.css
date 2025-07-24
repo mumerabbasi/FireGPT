@@ -1,0 +1,129 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+#map {
+  height: 100vh;
+  width: 100vw;
+}
+
+.vertical-control {
+  background: white;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.22);
+  border-radius: 10px;
+  padding: 4px 6px;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-end;
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  z-index: 1001;
+  justify-content: center;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  width: 60px;
+  flex: 1 1 0;
+}
+
+.vertical-control button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px 8px;
+  user-select: none;
+  border-radius: 7px;
+  transition: background-color 0.18s, box-shadow 0.18s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+  width: 40px;
+  height: 40px;
+  min-width: 0;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vertical-control button img {
+  width: 32px !important;
+  height: 32px !important;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 1.5px rgba(0, 0, 0, 0.07);
+  padding: 2px;
+  object-fit: contain;
+  display: block;
+}
+
+.vertical-control button:hover {
+  background-color: #ededed;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.control-label {
+  margin-top: 3px;
+  font-size: 10px;
+  color: #333;
+  text-align: center;
+  user-select: none;
+  line-height: 1.05;
+  font-family: inherit;
+  white-space: nowrap;
+  max-width: 64px;
+  word-break: break-word;
+  opacity: 0.90;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.selected-layer {
+  filter: drop-shadow(0 0 6px #f00);
+}
+
+.leaflet-popup-close-button {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .vertical-control {
+    padding: 2px 2px;
+    gap: 2px;
+  }
+
+  .control-item {
+    width: 36px;
+    min-width: 36px;
+  }
+
+  .vertical-control button {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    padding: 3px 2px;
+  }
+
+  .vertical-control button img {
+    width: 18px !important;
+    height: 18px !important;
+    padding: 0;
+  }
+
+  .control-label {
+    display: none !important;
+  }
+}
