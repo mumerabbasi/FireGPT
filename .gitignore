@@ -55,6 +55,7 @@ logs/
 .cache/
 .cache/huggingface/
 models/
+huggingface_models/
 
 # ──────────────────────────────────────────────────────────────
 # Some dirs
@@ -76,6 +77,11 @@ temp/``
 # ──────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# ──────────────────────────────────────────────────────────────
+# Ollama data and keys
+# ──────────────────────────────────────────────────────────────
+
 ollama_data/id_ed25519
 ollama_data/id_ed25519.pub
 src/firespread/earth_engine_key.json
