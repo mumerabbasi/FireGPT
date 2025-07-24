@@ -6,7 +6,6 @@ services:
     container_name: ollama
     ports:
       - "11434:11434"
-    # If you need GPU access for Ollama, uncomment the following lines
     deploy:
       resources:
         reservations:
@@ -15,16 +14,11 @@ services:
               count: all
               capabilities: [gpu]
     environment:
-      # Add any environment variables for Ollama here
-      # For example:
-      # - OLLAMA_HOST=0.0.0.0
       - OLLAMA_DEBUG=${OLLAMA_DEBUG:-false} # Example placeholder
       - OLLAMA_CONTEXT_LENGTH=32768
       - OLLAMA_NEW_ENGINE=true
-      # Set OLLAMA_GPU_OVERHEAD to 8 GB in bytes
-      # Optional: Mount a volume for Ollama models persistence
-      # - ollama_models:/root/.ollama
-      - /app/ollama_data:/root/.ollama:ro # Example: Persist data in a local directory
+    volumes:
+      - /app/ollama_data:/root/.ollama # Example: Persist data in a local directory
       
 
   ami-mcp:
@@ -33,7 +27,7 @@ services:
     ports:
       - "7790:7790"
     volumes:
-      - /app/mcp/models:/app/mcp/models
+      - ./huggingface_models:/app/mcp/models
     # deploy:
     #   resources:
     #     reservations:
@@ -48,7 +42,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /app/mcp/models:/app/mcp/models
+      - ./huggingface_models:/app/mcp/models
       - ./docs:/app/docs
     # deploy:
     #   resources:
