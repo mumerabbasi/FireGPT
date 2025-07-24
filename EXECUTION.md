@@ -21,7 +21,7 @@ ollama pull qwen2.5vl
 ollama pull qwen3:8b
 ```
 
-For MCP you have to download the models respectively, in our case it's BAAI/bge-m3 and BAAI/bge-reranker-v2-m3. You can actually use the scripts present in utilities to download the models and set the paths via FGPT_EMBED_MODEL environment variable.
+For MCP you have to download the models respectively, in our case it's BAAI/bge-m3 and BAAI/bge-reranker-v2-m3. You can actually use the scripts present in utilities to download the models and set the paths via FGPT_EMBED_MODEL and FGPT_RERANK_MODEL environment variable respectively.
 
 Used Environment Variables
 
@@ -30,7 +30,7 @@ Used Environment Variables
 | **FGPT_MCP_URL** | `http://localhost:7790/mcp/`                        | URL for the Model Context Protocol (MCP) server.      |
 | **OPENAI_API_BASE** | `http://localhost:11434/v1`                         | Base URL for the OpenAI-compatible API (used by Ollama). |
 | **FGPT_MODEL** | `qwen3:8b (primary) / qwen2.5vl (vision)`           | Specifies the language model to be used.              |
-| **EE_SERVICE_ACCOUNT_KEY** | `None` (environment variable must be set)     | Path to the Earth Engine service account key.         |
+| **EE_SERVICE_ACCOUNT_KEY** | `None` (environment variable must be set)     | Path to the Earth Engine service account key. **Not required currently**.        |
 | **FGPT_CHUNK_SIZE** | `1024`                                              | Size of text chunks for document processing.          |
 | **FGPT_CHUNK_OVERLAP** | `128`                                             | Overlap between text chunks.                          |
 | **FGPT_COLLECTION** | `fire_docs`                                         | Name of the document collection in the vector store.  |
@@ -39,7 +39,7 @@ Used Environment Variables
 | **FGPT_DB_PATH_LOCAL** | `stores/local`                                  | Path for the regional/local document store.           |
 | **FGPT_DB_PATH_GLOBAL** | `stores/global`                                 | Path for the global document store.                   |
 | **FGPT_RERANK_MODEL** | `/app/mcp/models/bge-reranker-v2-m3`             | Path to the reranking model.                          |
-| **FGPT_CANDIDATE_K** | `50`                                                | Number of candidate chunks to retrieve.               |
+| **FGPT_CANDIDATE_K** | `20`                                                | Number of candidate chunks to retrieve.               |
 | **FGPT_TOP_K** | `5`                                                 | Number of top chunks to use after reranking.          |
 | **FGPT_HOST** | `0.0.0.0`                                           | Host address for the application.                     |
 | **FGPT_PORT** | `7790`                                              | Port for the application.                             |
