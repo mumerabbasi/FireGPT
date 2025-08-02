@@ -2,23 +2,24 @@ version: '3.8'
 
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: kesava89/ami-ollama:latest
     container_name: ollama
     ports:
       - "11434:11434"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # command: /bin/sh -c "chmod +x /run-ollama.sh && /run-ollama.sh"
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
     environment:
       - OLLAMA_DEBUG=${OLLAMA_DEBUG:-false} # Example placeholder
       - OLLAMA_CONTEXT_LENGTH=32768
       - OLLAMA_NEW_ENGINE=true
-    volumes:
-      - /app/ollama_data:/root/.ollama # Example: Persist data in a local directory
+    # volumes:
+    #   - /app/ollama_data:/root/.ollama # Example: Persist data in a local directory
       
 
   ami-mcp:
