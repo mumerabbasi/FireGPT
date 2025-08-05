@@ -9,10 +9,9 @@ FROM kesava89/ami-base:latest as base
 COPY ./src/ /app/
 
 # --- Hugging Face Model Downloads (Moved to host + volume mount) ---
-# Create the models directory inside the container (empty mount point)
+# Create the models directory inside the container
 RUN mkdir -p /app/mcp/models
-# No more HF_TOKEN or huggingface-cli downloads here
-
+COPY ./huggingface_models/ /app/mcp/models/
 # --- End Hugging Face Model Downloads ---
 
 # ENVIRONMENT VARIABLES (Set for the entire container)
@@ -38,4 +37,4 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app/backend
 
 # Command to run supervisord, which in turn runs your Python servers
-ENTRYPOINT conda run --no-capture-output -n ami python -u main.py
+ENTRYPOINT conda run --no-capture-output -n ami fastapi run main.py

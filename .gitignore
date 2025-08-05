@@ -55,6 +55,7 @@ logs/
 .cache/
 .cache/huggingface/
 models/
+!src/mcp/forest_fire_gee/models/
 huggingface_models/
 
 # ──────────────────────────────────────────────────────────────

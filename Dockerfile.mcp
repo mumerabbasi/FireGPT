@@ -11,6 +11,7 @@ COPY ./src/ /app/
 # --- Hugging Face Model Downloads (Moved to host + volume mount) ---
 # Create the models directory inside the container (empty mount point)
 RUN mkdir -p /app/mcp/models
+COPY ./huggingface_models/ /app/mcp/models/
 # No more HF_TOKEN or huggingface-cli downloads here
 
 # --- End Hugging Face Model Downloads ---
