@@ -6,7 +6,6 @@ services:
     container_name: ollama
     ports:
       - "11434:11434"
-    # command: /bin/sh -c "chmod +x /run-ollama.sh && /run-ollama.sh"
     deploy:
       resources:
         reservations:
@@ -15,11 +14,9 @@ services:
               count: all
               capabilities: [gpu]
     environment:
-      - OLLAMA_DEBUG=${OLLAMA_DEBUG:-false} # Example placeholder
+      - OLLAMA_DEBUG=${OLLAMA_DEBUG:-false}
       - OLLAMA_CONTEXT_LENGTH=32768
       - OLLAMA_NEW_ENGINE=true
-    # volumes:
-    #   - /app/ollama_data:/root/.ollama # Example: Persist data in a local directory
       
 
   ami-mcp:
@@ -41,7 +38,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./huggingface_models:/app/mcp/models
       - ./docs:/app/docs
     # deploy:
     #   resources:
@@ -52,13 +48,8 @@ services:
     #           capabilities: [gpu]
     restart: always
     environment:
-      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://ollama:11434/v1} # Example placeholder
-      - FGPT_MCP_URL=${FGPT_MCP_URL:-http://ami-mcp:7790/mcp} # Example placeholder
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-http://ollama:11434/v1}
+      - FGPT_MCP_URL=${FGPT_MCP_URL:-http://ami-mcp:7790/mcp} 
     depends_on:
       - ami-mcp # Assuming backend depends on mcp
       - ollama # Add dependency on ollama if backend uses it
-
-# Optional: Define volumes if you uncommented the ollama_models volume
-# volumes:
-#   ollama_models:
-#     driver: local
