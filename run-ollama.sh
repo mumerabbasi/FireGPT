@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ollama serve &
-ollama list
-ollama pull qwen2.5vl qwen3:8b
+ollama serve & sleep 20
+ollama pull qwen2.5vl
+ollama pull qwen3:8b
 
