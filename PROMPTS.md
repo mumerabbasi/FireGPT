@@ -1,0 +1,2 @@
+Sample Prompts:
+1. I have a marked area where there's a possibility of fire, and it started just now. I don't know where the fire could be within that area, but I also have a drone (marked). Could you give me the waypoints for the drone so that i) It can perform surveillence and ii) The drone can spray water on the fire area, so waypoint can be made in a way that it can extinguish the fire completely. Remember also to end the waypoint such that it ends at the place from where it started.
