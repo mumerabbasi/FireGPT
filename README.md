@@ -30,6 +30,8 @@ The main services include:
 
 ## Deployment
 
+> This document assumes you have a GPU present in the host machine and necessary docker setup is made for GPUs to work. In case you are running in a GPU-free environment, please comment the "deploy" sections in the `docker-compose.yml` file. Please keep in mind that this means you will load around 12 GB worth of models in RAM.
+
 ### Using Docker Compose (Recommended)
 
 1.  **Clone the repository:**
