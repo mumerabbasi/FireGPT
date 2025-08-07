@@ -63,7 +63,7 @@ huggingface_models/
 # ──────────────────────────────────────────────────────────────
 data/
 stores/
-docs/
+# docs/
 raw/
 FireGPT/
 chat_images/
