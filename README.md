@@ -1,6 +1,6 @@
 # FireGPT
 
-FireGPT is a comprehensive system for wildfire intelligence and management. It leverages AI agents, geospatial data, and fire spread models to provide real-time insights and decision support for firefighting operations.
+FireGPT is a comprehensive system for wildfire intelligence and management. It leverages AI agents, geospatial data, and fire spread models to provide real-time insights and decision support for firefighting operations. Please find the project report [here](report/FireGPT.pdf). 
 
 ## Features
 
