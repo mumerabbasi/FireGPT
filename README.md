@@ -15,7 +15,7 @@ FireGPT is a comprehensive system for wildfire intelligence and management. It l
 FireGPT is built on a microservices architecture, with different components containerized using Docker. The services are orchestrated using `docker-compose`.
 
 The main services include:
-*   **Backend**: The main server that handles business logic and communication between services.
+*   **Backend**: FastAPI-based main server that handles business logic and communication between services.
 *   **Frontend**: A web-based user interface.
 *   **GEE (Google Earth Engine) Service**: A service for handling Google Earth Engine related tasks.
 *   **MCP (Model Context Protocol) Server**: A server for providing model context.
