@@ -2,7 +2,7 @@
 
 This project was completed as a part of the **Applied Machine Intelligence (CIT433042)** course at **TUM**.
 
-FireGPT is a comprehensive system for wildfire intelligence and management. It leverages AI agents, geospatial data, and fire spread models to provide real-time insights and decision support for firefighting operations. Please find the project report [here](report/FireGPT.pdf). 
+FireGPT is an agentic retrieval-augmented generation (RAG) system that combines an LLM-based operations agent with geospatial intelligence and fire-spread simulation, using an MCP-based retrieval tool to pull grounded evidence on demand.
 
 ## Features
 
