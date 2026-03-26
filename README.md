@@ -21,7 +21,7 @@ An agentic RAG system that combines LLM-based reasoning with real-time geospatia
 
 ## Demo
 
-<video src="https://github.com/mumerabbasi/FireGPT/raw/main/assets/FireGPT_Demo.mp4" controls width="100%"></video>
+[![FireGPT Demo](assets/FireGPT_Demo_thumbnail.png)](https://github.com/mumerabbasi/FireGPT/raw/main/assets/FireGPT_Demo.mp4)
 
 ---
 
