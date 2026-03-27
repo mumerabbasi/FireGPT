@@ -99,7 +99,7 @@ All reasoning happens through an autonomous agent loop that decides which tools 
      │  ┌─────────────┐  │
      │  │ FireGEE     │  │
      │  │ Client      │──┼───► Google Earth Engine APIs
-     │  └─────────────┘  │    (GFS, Hansen, CORINE, SRTM, JRC)
+     │  └─────────────┘  │    (GFS, Hansen, CORINE, SRTM)
      └───────────────────┘
 ```
 
@@ -132,7 +132,7 @@ All reasoning happens through an autonomous agent loop that decides which tools 
 ### Quick Start
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/mumerabbasi/FireGPT.git
 cd FireGPT
 docker-compose up
 ```
