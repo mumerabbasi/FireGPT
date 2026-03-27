@@ -7,10 +7,10 @@
 An agentic RAG system that combines LLM-based reasoning with real-time geospatial analysis, fire danger modeling, and autonomous drone waypoint generation for wildfire incident response.
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-ReAct_Agent-1C3C3C?logo=langchain&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-Qwen3_8B-000000?logo=ollama&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Model_Serving-000000?logo=ollama&logoColor=white)
 ![Google Earth Engine](https://img.shields.io/badge/Google_Earth_Engine-Geospatial-4285F4?logo=google-earth&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-Tool_Integration-8B5CF6)
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-FF6F00)
