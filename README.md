@@ -43,7 +43,7 @@ FireGPT is an end-to-end wildfire decision-support system. A user marks a fire-a
 1. **Assess fire danger** across the marked region using satellite imagery, weather data, vegetation density, and land cover classification from Google Earth Engine
 2. **Retrieve grounded evidence** from uploaded SOPs, safety manuals, and best-practice documents using a multi-tiered RAG pipeline with cross-encoder reranking
 3. **Generate drone waypoints** for surveillance, water spraying, search-and-rescue, and post-fire assessment based on the fire danger scores and terrain analysis
-4. **Analyze uploaded images** using a vision LLM to detect fire perimeters, attack routes, water sources, and helipads
+4. **Analyze uploaded images** using a vision LLM to describe visible fire perimeters, attack routes, water sources, helipads, and other incident-relevant details
 
 All reasoning happens through an autonomous agent loop that decides which tools to invoke, in what order, and how to combine their outputs into an actionable response.
 
@@ -61,7 +61,7 @@ All reasoning happens through an autonomous agent loop that decides which tools 
 | **Interactive Map UI** | Leaflet.js map with draw tools for marking fire areas and POIs, geocoding search, and real-time waypoint visualization |
 | **Multimodal Input** | Accepts text queries, PDF document uploads, and image uploads analyzed by a vision LLM (Qwen 2.5 VL) |
 | **Critical Infrastructure Detection** | Identifies hospitals, schools, fire stations, and shelters near fire zones via OpenStreetMap Overpass API with distance-to-risk calculations |
-| **Fully Containerized** | Five Docker services orchestrated via Compose with GPU acceleration support. One command to deploy |
+| **Containerized Deployment** | `docker-compose.yml` runs the core backend, MCP, and Ollama services, and the repo also includes Dockerfiles for optional local builds of the fire-assessment service |
 
 ---
 
@@ -72,10 +72,10 @@ All reasoning happens through an autonomous agent loop that decides which tools 
 │                         Browser UI                               │
 │   ┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐  │
 │   │  Document    │  │   Chat Interface │  │   Leaflet.js Map  │  │
-│   │  Sidebar     │  │   (Streaming)    │  │   + Draw Tools    │  │
+│   │  Sidebar     │  │  Request/Response │  │   + Draw Tools    │  │
 │   └─────────────┘  └──────────────────┘  └───────────────────┘  │
 └──────────────────────────────┬───────────────────────────────────┘
-                               │ REST / SSE
+                               │ REST
                                ▼
               ┌────────────────────────────────┐
               │     Backend  (FastAPI :8000)    │
@@ -97,13 +97,13 @@ All reasoning happens through an autonomous agent loop that decides which tools 
      │  │ Global      │  │
      │  └─────────────┘  │
      │  ┌─────────────┐  │
-     │  │ FireGEE     │  │
-     │  │ Client      │──┼───► Google Earth Engine APIs
-     │  └─────────────┘  │    (GFS, Hansen, CORINE, SRTM)
+     │  │ Fire Danger │  │
+     │  │ API Client  │──┼───► Fire danger service
+     │  └─────────────┘  │    (backed by GEE + Overpass)
      └───────────────────┘
 ```
 
-**Data flow:** User draws a fire area on the map and sends a query → Backend feeds the query + map geometry to the ReAct agent → Agent autonomously invokes MCP tools (fire danger assessment, document retrieval) → MCP server queries GEE for geospatial data and ChromaDB for relevant documents → Agent synthesizes findings into an actionable response streamed back to the UI.
+**Data flow:** User draws a fire area on the map and sends a query → Backend feeds the query + map geometry to the ReAct agent → Agent autonomously invokes MCP tools (fire danger assessment, document retrieval) → MCP server queries a FireGEE-backed fire danger API and ChromaDB for relevant documents → Agent synthesizes findings into an actionable response returned to the UI.
 
 ---
 
@@ -115,7 +115,7 @@ All reasoning happens through an autonomous agent loop that decides which tools 
 | **Language Models** | Qwen 3 8B (reasoning), Qwen 2.5 VL (vision), served locally via Ollama |
 | **Vector Search** | ChromaDB + BGE-M3 embeddings (384-dim) + BGE-Reranker-V2-M3 cross-encoder |
 | **Geospatial** | Google Earth Engine, OpenStreetMap Overpass API, GeoPy |
-| **Backend** | Python 3.11, FastAPI, SSE-Starlette, HTTPX, uvicorn |
+| **Backend** | Python 3.11, FastAPI, uvicorn |
 | **Frontend** | HTML/CSS/JS, Leaflet.js 1.9.4 + Leaflet-Draw, Marked.js, DOMPurify |
 | **ML Libraries** | PyTorch, Transformers, Sentence-Transformers |
 | **Infrastructure** | Docker, Docker Compose, NVIDIA CUDA (GPU), Conda |
@@ -137,12 +137,14 @@ cd FireGPT
 docker-compose up
 ```
 
-Access the UI at **http://localhost:8080**.
+The default Compose file starts the three core services using prebuilt images.
+
+Access the UI at **http://localhost:8000**.
 
 ### Manual Build
 
 ```bash
-# Build all images and download models
+# Build local images and download retrieval models
 ./build.sh
 
 # Start services
