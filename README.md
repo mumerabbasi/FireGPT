@@ -231,15 +231,15 @@ User Query
 
 Each grid cell in the marked area receives a danger score (0 to 100) based on:
 
-| Factor | Data Source | Contribution |
-|:-------|:-----------|:-------------|
-| Tree cover density | Hansen Global Forest Change | +10 to +30 pts |
-| Forest type (coniferous / broadleaf / mixed) | CORINE Land Cover | +5 to +15 pts |
-| Recent forest loss (dead fuel) | Hansen Loss Year | +5 to +10 pts |
-| Wind speed | NOAA GFS (U/V components) | +10 to +20 pts |
-| Temperature | NOAA GFS | +5 to +15 pts |
-| Land cover type | CORINE (grassland, woodland-shrub, wetland, water, etc.) | -15 to +10 pts |
-| Altitude | SRTM Elevation | -2 to +5 pts |
+| Factor | Data Source |
+|:-------|:-----------|
+| Tree cover density | Hansen Global Forest Change |
+| Forest type (coniferous / broadleaf / mixed) | CORINE Land Cover |
+| Recent forest loss (dead fuel) | Hansen Loss Year |
+| Wind speed | NOAA GFS (U/V components) |
+| Temperature | NOAA GFS |
+| Land cover type | CORINE (grassland, woodland-shrub, wetland, water, etc.) |
+| Altitude | SRTM Elevation |
 
 ---
 
