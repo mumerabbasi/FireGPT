@@ -24,7 +24,7 @@ An agentic RAG system that combines LLM-based reasoning with real-time geospatia
 | Capability | Detail |
 |:-----------|:------:|
 | Autonomous Reasoning | Up to **15 tool-use steps** per query |
-| Geospatial Analysis | **5+ satellite datasets** via Google Earth Engine |
+| Geospatial Analysis | **4 satellite datasets** via Google Earth Engine |
 | Knowledge Retrieval | **3-tier RAG** with cross-encoder reranking |
 | Drone Operations | **Optimized waypoint generation** based on danger scores and terrain |
 
@@ -54,7 +54,7 @@ All reasoning happens through an autonomous agent loop that decides which tools 
 | Feature | Description |
 |:--------|:------------|
 | **Agentic Reasoning** | LangGraph ReAct agent with up to 15 autonomous tool-use steps per turn that plans, retrieves, analyzes, and synthesizes without manual orchestration |
-| **Real-Time Fire Danger Scoring** | Per-cell danger scores (0 to 100) computed from 5+ GEE datasets: Hansen tree cover, CORINE land cover, GFS weather forecasts, SRTM elevation, and JRC forest maps |
+| **Real-Time Fire Danger Scoring** | Per-cell danger scores (0 to 100) computed from 4 GEE datasets: Hansen tree cover, CORINE land cover, GFS weather forecasts, and SRTM elevation |
 | **Multi-Tiered RAG** | Three-level knowledge base (session / regional / global) with BGE-M3 embeddings and BGE-Reranker-V2-M3 cross-encoder reranking for high-precision retrieval (see below) |
 | **MCP Tool Integration** | Retrieval tools and geospatial APIs exposed via Model Context Protocol. The agent discovers and invokes them at runtime through a standardized tool interface |
 | **Drone Waypoint Generation** | Generates optimized flight paths (8 to 16 waypoints) for surveillance, fire suppression, and search-and-rescue based on danger scores and terrain |
@@ -233,13 +233,13 @@ Each grid cell in the marked area receives a danger score (0 to 100) based on:
 
 | Factor | Data Source | Contribution |
 |:-------|:-----------|:-------------|
-| Tree cover density | Hansen Global Forest Change | Up to +30 pts |
+| Tree cover density | Hansen Global Forest Change | +10 to +30 pts |
 | Forest type (coniferous / broadleaf / mixed) | CORINE Land Cover | +5 to +15 pts |
-| Recent forest loss (dead fuel) | Hansen Loss Year | Variable |
-| Wind speed & direction | NOAA GFS (U/V components) | Variable |
-| Temperature | NOAA GFS | Variable |
-| Land cover type | CORINE (artificial, wetland, water) | -20 to +0 pts |
-| Altitude | SRTM Elevation | Modifies weather effects |
+| Recent forest loss (dead fuel) | Hansen Loss Year | +5 to +10 pts |
+| Wind speed | NOAA GFS (U/V components) | +10 to +20 pts |
+| Temperature | NOAA GFS | +5 to +15 pts |
+| Land cover type | CORINE (grassland, woodland-shrub, wetland, water, etc.) | -15 to +10 pts |
+| Altitude | SRTM Elevation | -2 to +5 pts |
 
 ---
 
