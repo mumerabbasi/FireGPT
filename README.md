@@ -19,6 +19,17 @@ An agentic RAG system that combines LLM-based reasoning with real-time geospatia
 
 ---
 
+## Highlights
+
+| Capability | Detail |
+|:-----------|:------:|
+| Autonomous Reasoning | Up to **15 tool-use steps** per query |
+| Geospatial Analysis | **5+ satellite datasets** via Google Earth Engine |
+| Knowledge Retrieval | **3-tier RAG** with cross-encoder reranking |
+| Drone Operations | **4 mission types** (surveillance, suppression, SAR, assessment) |
+
+---
+
 ## Demo
 
 https://github.com/user-attachments/assets/6fecf0ad-c70c-4c45-9009-74ceb49640b9
@@ -249,7 +260,7 @@ Split the single ReAct agent into **specialized sub-agents** such as a fire anal
 Connect waypoint generation to real **flight controller APIs** (MAVLink/PX4) to enable direct drone dispatch from the chat interface, closing the loop from analysis to physical action.
 
 ### Predictive Fire Spread Modeling
-Integrate physics-based or ML-driven **fire propagation models** (e.g., FARSITE, FlamMap, or neural surrogate models) that project fire spread over time using wind, terrain, and fuel data, enabling the agent to reason about where the fire *will be*, not just where it is now.
+Integrate physics-based or ML-driven **fire propagation models** (e.g., FARSITE, FlamMap, or neural surrogate models) that project fire spread over time using wind, terrain, and fuel data, enabling the agent to reason about where the fire will be, not just where it is now.
 
 ### Streaming Geospatial Updates
 Push **real-time map layer updates** to the frontend via WebSockets as the agent processes GEE data, so users see fire danger heatmaps, POI markers, and drone waypoints appear incrementally rather than waiting for the full response.
