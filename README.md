@@ -26,7 +26,7 @@ An agentic RAG system that combines LLM-based reasoning with real-time geospatia
 | Autonomous Reasoning | Up to **15 tool-use steps** per query |
 | Geospatial Analysis | **5+ satellite datasets** via Google Earth Engine |
 | Knowledge Retrieval | **3-tier RAG** with cross-encoder reranking |
-| Drone Operations | **4 mission types** (surveillance, suppression, SAR, assessment) |
+| Drone Operations | **Optimized waypoint generation** based on danger scores and terrain |
 
 ---
 
