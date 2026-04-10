@@ -70,15 +70,15 @@ All reasoning happens through an autonomous agent loop that decides which tools 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                         Browser UI                               │
-│   ┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐  │
-│   │  Document    │  │   Chat Interface │  │   Leaflet.js Map  │  │
-│   │  Sidebar     │  │  Request/Response │  │   + Draw Tools    │  │
-│   └─────────────┘  └──────────────────┘  └───────────────────┘  │
+│   ┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐   │
+│   │  Document   │  │   Chat Interface │  │   Leaflet.js Map  │   │
+│   │  Sidebar    │  │  Request/Response│  │   + Draw Tools    │   │
+│   └─────────────┘  └──────────────────┘  └───────────────────┘   │
 └──────────────────────────────┬───────────────────────────────────┘
                                │ REST
                                ▼
               ┌────────────────────────────────┐
-              │     Backend  (FastAPI :8000)    │
+              │     Backend  (FastAPI :8000)   │
               │  • LangGraph ReAct Agent       │
               │  • Session & Document Mgmt     │
               │  • Vision LLM Image Captioning │
