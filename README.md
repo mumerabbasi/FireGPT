@@ -6,6 +6,7 @@
 
 An agentic RAG system that combines LLM-based reasoning with real-time geospatial analysis, fire danger modeling, and autonomous drone waypoint generation for wildfire incident response.
 
+<a href="assets/FireGPT_Report.pdf"><img src="https://img.shields.io/badge/Technical_Report-PDF-blue" alt="Report"></a>
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-ReAct_Agent-1C3C3C?logo=langchain&logoColor=white)
